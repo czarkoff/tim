@@ -15,7 +15,7 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-import sys, Tkinter
+import os.path, sys, Tkinter
 from PIL import Image, ImageTk
 
 class CropPhoto(Tkinter.Frame):
@@ -305,31 +305,34 @@ def perror(error):
 
 __version__ = "a1"
 
-progname = sys.argv.pop(0)
-if "/" in progname:
-    progname = progname[progname.rindex("/")+1:]
+progname = os.path.basename(sys.argv.pop(0))
+
+stream = sys.stdout
 
 if len(sys.argv) == 0:
-    phelp()
+    phelp(stream = stream)
     sys.exit(0)
 
 elif sys.argv[0] == "-h":
-    phelp(detailed=True)
+    phelp(stream = stream, detailed=True)
     sys.exit(0)
 
-filename = sys.argv.pop(0)
-if filename == "-s" or filename == "-c":
-    perror("no input file specified")
+if sys.argv.count("-"):
+    perror("reading from and/or writing to pipes not supported")
     sys.exit(1)
-elif filename == "-":
-    image = sys.stdin
-else:
-    try:
-        image = open(filename, "r")
-    except:
-        perror("error opening the file" + filename)
 
-image = Image.open(image)
+imagefile = sys.argv.pop(0)
+try:
+    image = Image.open(imagefile)
+except IOError as error:
+    perror("{0} (input): {1}".format(imagefile, error[-1]))
+    sys.exit(1)
+except:
+    perror("error opening file \"{0}\"".format(imagefile))
+    raise
+    sys.exit(1)
+
+
 while len(sys.argv) > 1:
     operation = sys.argv.pop(0)
 
@@ -341,7 +344,6 @@ while len(sys.argv) > 1:
             sys.exit(1)
         if geometry[0] == "edit":
             geometry = edit(image, geometry[1:])
-            #geometry = edit(ImageTk.PhotoImage(image), geometry[1:])
         
         if geometry == None:
             perror("\"{0}\" operation canceled wia GUI".format(operation));
@@ -373,16 +375,20 @@ while len(sys.argv) > 1:
     else:
         perror("wrong operation \"{0}\"".format(operation))
         sys.exit(0)
+
 if len(sys.argv) == 0:
     perror("no output file specified")
     sys.exit(1)
 
-if sys.argv[0] == filename:
-    perror("infile and outfile are the same - nothing is written to disk")
-    sys.exit(0)
-
-filename = sys.argv[0]
-output = open(filename, "wb")
-image.save(output)
+imagefile = sys.argv.pop(0)
+try:
+    image = image.save(imagefile)
+except IOError as error:
+    perror("{0} (output): {1}".format(imagefile, error[-1]))
+    sys.exit(1)
+except:
+    perror("error opening file \"{0}\"".format(imagefile))
+    raise
+    sys.exit(1)
 
 # vim:set ts=4 et
