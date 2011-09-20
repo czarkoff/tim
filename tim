@@ -383,18 +383,14 @@ while len(sys.argv) > 1:
         perror("wrong operation \"{0}\"".format(operation))
         sys.exit(0)
 
-if len(sys.argv) == 0:
-    perror("no output file specified")
-    sys.exit(1)
-
-imagefile = sys.argv.pop(0)
 try:
+    imagefile = sys.argv.pop(0)
     image = image.save(imagefile)
 except IOError as error:
     perror("{0} (output): {1}".format(imagefile, error[-1]))
     sys.exit(1)
 except KeyError:
-    perror("command line too short")
+    perror("no output file specified")
     sys.exit(1)
 except:
     perror("{0} (output): unknown error; please report the traceback:".format(imagefile))
