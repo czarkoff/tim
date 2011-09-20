@@ -253,3 +253,5 @@ if sys.argv[0] == filename:
 filename = sys.argv[0]
 output = open(filename, "wb")
 image.save(output)
+
+# vim:set ts=4 et
