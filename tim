@@ -18,7 +18,7 @@
 import sys, Tkinter
 from PIL import Image, ImageTk
 
-class Resizer(Tkinter.Frame):
+class CropPhoto(Tkinter.Frame):
     def __init__(self, master, status, img, left, upper, right, lower, buttons=False, **kw):
         self.state = True
         self.img = img
@@ -191,7 +191,7 @@ def edit(img, geometry):
     upper.set(0)
     right.set(bbox[2] - geometry[2])
     lower.set(bbox[2] - geometry[3])
-    resizer = Resizer(root, status, img, left, upper, right, lower, buttons=True)
+    resizer = CropPhoto(root, status, img, left, upper, right, lower, buttons=True)
     resizer.pack()
 
     root.mainloop()
