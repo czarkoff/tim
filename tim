@@ -247,14 +247,14 @@ def set_geometry(spec, img):
         keep_aspect = False
 
     if spec.count("x") == 0:
-        if spec[-1] == "%" and spec[:-1].isdigit():
+        if spec[-1] == "%":
             percent = int(spec[:-1])
             x = fx * percent / 100
             y = fy * percent / 100
         else:
-            raise ValueError("Wrong value")
-    elif spec.count("x") != 1:
-        raise ValueError("Wrong value")
+            raise ValueError("malformed spec \"{0}\"".format(spec))
+    elif spec.count("x") > 1:
+        raise ValueError("malformed spec \"{0}\"".format(spec))
     else:
         x, y = spec.split("x")
 
@@ -332,16 +332,22 @@ except:
     raise
     sys.exit(1)
 
-
+operations = 0
 while len(sys.argv) > 1:
     operation = sys.argv.pop(0)
+    operations += 1
 
     if operation == "-c":
         try:
             geometry = ext_geometry(sys.argv.pop(0), image)
-        except:
-            perror("no geometry provided for \"{0}\" operation".format(operation))
+        except ValueError as error:
+            perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
             sys.exit(1)
+        except:
+            perror("{0} (input): unknown error; please report the traceback:".format(imagefile))
+            raise
+            sys.exit(1)
+            
         if geometry[0] == "edit":
             geometry = edit(image, geometry[1:])
         
@@ -353,22 +359,23 @@ while len(sys.argv) > 1:
         image.load()
 
     elif operation == "-r":
-        try:
-            angle = sys.argv.pop(0)
-        except:
-            perror("no angle provided for \"{0}\" operation".format(operation))
+        angle = sys.argv.pop(0)
         try:
             angle = int(angle) * -1
-        except:
-            perror("wrong angle \"{0}\"\n".format(geometry))
+        except ValueError as error:
+            perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
             sys.exit(1)
         image = image.rotate(angle, Image.BICUBIC, True)
 
     elif operation == "-s":
         try:
             geometry = set_geometry(sys.argv.pop(0), image)
+        except ValueError as error:
+            perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
+            sys.exit(1)
         except:
-            perror("no geometry provided for \"{0}\" operation".format(operation))
+            perror("{0} (input): unknown error; please report the traceback:".format(imagefile))
+            raise
             sys.exit(1)
         image = image.resize(geometry, Image.ANTIALIAS)
 
@@ -385,6 +392,9 @@ try:
     image = image.save(imagefile)
 except IOError as error:
     perror("{0} (output): {1}".format(imagefile, error[-1]))
+    sys.exit(1)
+except KeyError:
+    perror("command line too short")
     sys.exit(1)
 except:
     perror("{0} (output): unknown error; please report the traceback:".format(imagefile))
