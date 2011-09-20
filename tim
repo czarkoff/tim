@@ -212,7 +212,7 @@ def ext_geometry(spec, img):
         lower += upper
 
     elif spec.count("+") == 2:
-        right, lower = set_geometry(spec[:-1], img)
+        right, lower = set_geometry(spec[:spec.index("+")], img)
         spec, upper, left = spec.split("+")
         left = int(left)
         upper = int(upper)
