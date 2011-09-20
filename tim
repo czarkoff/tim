@@ -185,12 +185,12 @@ def edit(img, geometry):
     lower = Tkinter.IntVar()
     
     bbox = img.getbbox()
-
+    
     status.set(0)
     left.set(0)
     upper.set(0)
     right.set(bbox[2] - geometry[2])
-    lower.set(bbox[2] - geometry[3])
+    lower.set(bbox[3] - geometry[3])
     resizer = CropPhoto(root, status, img, left, upper, right, lower, buttons=True)
     resizer.pack()
 
@@ -262,10 +262,12 @@ def set_geometry(spec, img):
         y = int(y)
         
         if keep_aspect:
-            if (float(x/y) >= float(fx/fy)):
-                y = int(float(fy/fx) * x)
-            elif (float(x/y) <= float(fx/fy)):
-                x = int(float(fx/fy) * y)
+            if (fx*y/fy > x):
+                y = fy*x
+                y /= fx
+            elif (fy*x/fx > y):
+                x = fx*y
+                x /= fy
 
     return (x, y)
 
