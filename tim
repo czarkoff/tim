@@ -19,10 +19,13 @@ import sys, Tkinter
 from PIL import Image, ImageTk
 
 class Resizer(Tkinter.Frame):
-    def __init__(self, master, status, img, left, upper, right, lower, **kw):
+    def __init__(self, master, status, img, left, upper, right, lower, buttons=False, **kw):
         self.state = True
         self.img = img
         self.status = status
+
+        if not buttons:
+            self.status.set(1)
 
         self.left = left
         self.upper = upper
@@ -69,10 +72,11 @@ class Resizer(Tkinter.Frame):
         self.ebottom.bind("<Return>", self.lower_value)
 
         self.b_cancel = Tkinter.Button(self, text="Abort", command=self.cancel)
-        self.b_cancel.grid(row=2, column=0)
-        
         self.b_crop = Tkinter.Button(self, text="Crop", command=self.crop)
-        self.b_crop.grid(row=2, column=2)
+        
+        if buttons:
+            self.b_cancel.grid(row=2, column=0)
+            self.b_crop.grid(row=2, column=2)
 
     def chkpair(self, a, b):
         if a.get() < 0:
@@ -187,7 +191,7 @@ def edit(img, geometry):
     upper.set(0)
     right.set(bbox[2] - geometry[2])
     lower.set(bbox[2] - geometry[3])
-    resizer = Resizer(root, status, img, left, upper, right, lower)
+    resizer = Resizer(root, status, img, left, upper, right, lower, buttons=True)
     resizer.pack()
 
     root.mainloop()
