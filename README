@@ -1,0 +1,30 @@
+tim - tiny image manipulator
+
+ABOUT
+
+The idea of a program came to me when I had to create 4:3 thumbs for a group
+of different orientation images. I had to do my cropping with GIMP which isn't
+so suitable for such kind of manipulations.
+
+The program takes an image and applies a given set of filters. One of them -
+cropping - is done in graphical mode.
+
+REQUIREMENTS
+
+ * python 2.x (http://www.python.org/)
+ * Tkinter (included with python)
+ * PIL (http://www.pythonware.com/products/pil/)
+ * Any graphical UI capable of Tk (X11, Windows, MacOS X etc.)
+ * Mouse
+
+CURRENT STATE
+
+Currently the program does the very minimum it should. It lacks documentation
+and several sanity checks (it may do strange things). Some more work needs to
+be done.
+
+TODO
+
+ * Improve the Resizer UI;
+ * Possibly make Resizer a normal standalone widget;
+ * Possibly rewrite the program to use some modern libraries

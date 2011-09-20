@@ -1,0 +1,255 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2011 Dmitrij D. Czarkoff <czarkoff@gmail.com>
+# 
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+import sys, Tkinter
+from PIL import Image, ImageTk
+
+class Resizer(Tkinter.Frame):
+    def __init__(self, master, status, img, left, upper, right, lower, **kw):
+        self.state = True
+        self.img = img
+        self.status = status
+        self.left = left
+        self.upper = upper
+        self.right = right
+        self.lower = lower
+
+        Tkinter.Frame.__init__(self, master, **kw)
+        etop = Tkinter.Entry(self, textvariable=self.upper, width=5)
+        etop.grid(row=0, column=1)
+        
+        eleft = Tkinter.Entry(self, textvariable=self.left, width=5)
+        eleft.grid(row=1, column=0)
+
+        self.canvas = Tkinter.Canvas(self, width=img.getbbox()[2], height=img.getbbox()[3])
+        self.photo = ImageTk.PhotoImage(self.img)
+        self.canvas.create_image(0, 0, anchor=Tkinter.NW, image = self.photo);
+        self.canvas.grid(row=1, column=1)
+
+        self.rect = self.canvas.create_rectangle(self.left.get(), self.upper.get(), self.right.get(), self.lower.get())
+        self.canvas.bind("<Button-1>", self.bp)
+        self.canvas.bind("<ButtonRelease-1>", self.br)
+
+        eright = Tkinter.Entry(self, textvariable=self.right, width=5)
+        eright.grid(row=1, column=2)
+
+        ebottom = Tkinter.Entry(self, textvariable=self.lower, width=5)
+        ebottom.grid(row=2, column=1)
+
+        b_cancel = Tkinter.Button(self, text="Abort", command=self.cancel)
+        b_cancel.grid(row=2, column=0)
+        
+        b_crop = Tkinter.Button(self, text="Crop", command=self.crop)
+        b_crop.grid(row=2, column=2)
+
+    def bp(self, event):
+        if self.state:
+            self.state = False
+            self.x = event.x
+            self.y = event.y
+
+    def br(self, event):
+        self.state = True
+        x = event.x - self.x
+        y = event.y - self.y
+        self.left.set(self.left.get() + x)
+        self.right.set(self.right.get() + x)
+        self.upper.set(self.upper.get() + y)
+        self.lower.set(self.lower.get() + y)
+        self.canvas.coords(self.rect, self.left.get(), self.upper.get(), self.right.get(), self.lower.get())
+        
+    def cancel(self):
+        self.quit()
+
+    def crop(self):
+        self.status.set(1)
+        self.quit()
+
+def edit(img, geometry):
+    root = Tkinter.Tk()
+    
+    status = Tkinter.IntVar()
+    left = Tkinter.IntVar()
+    upper = Tkinter.IntVar()
+    right = Tkinter.IntVar()
+    lower = Tkinter.IntVar()
+
+    status.set(0)
+    left.set(0)
+    upper.set(0)
+    right.set(geometry[2])
+    lower.set(geometry[3])
+    resizer = Resizer(root, status, img, left, upper, right, lower)
+    resizer.pack()
+
+    root.mainloop()
+
+    if status.get() == 1:
+        return (left.get(), upper.get(), right.get(), lower.get())
+    else:
+        return
+
+def ext_geometry(spec, img):
+    bbox = img.getbbox()
+
+    if spec[-1] == "c":
+        right, lower = set_geometry(spec[:-1], img)
+        left = (bbox[2] - geometry[0]) / 2
+        upper = (bbox[3] - geometry[1]) / 2
+        right += left
+        lower += upper
+
+    elif spec.count("+") == 2:
+        right, lower = set_geometry(spec[:-1], img)
+        spec, upper, left = spec.split("+")
+        left = int(left)
+        upper = int(upper)
+        right += left
+        lower += upper
+
+    elif spec.count("-") == 2:
+        left, upper = set_geometry(spec[:-1], img)
+        spec, lower, right = spec.split("-")
+        lower = bbox[3] - int(lower)
+        right = bbox[2] - int(right)
+        left = right - left
+        upper = lower - upper
+        
+    elif spec.count("+") == 0:
+        return ("edit",) + bbox[2:] +  set_geometry(spec[:-1], img)
+
+    else:
+        raise ValueError("Wrong value")
+
+    return (left, upper, right, lower)
+
+def set_geometry(spec, img):
+    x = y = int()
+    keep_aspect = True
+    bbox = img.getbbox()
+    fx = bbox[2]
+    fy = bbox[3]
+
+    if spec[0] == "!":
+        spec = spec[1:]
+        keep_aspect = False
+
+    if spec.count("x") == 0:
+        if spec[-1] == "%" and spec[:-1].isdigit():
+            percent = int(spec[:-1])
+            x = fx * percent / 100
+            y = fy * percent / 100
+        else:
+            raise ValueError("Wrong value")
+    elif spec.count("x") != 1:
+        raise ValueError("Wrong value")
+    else:
+        i = spec.index("x")
+        x = int(spec[:i])
+        y = int(spec[i+1:])
+        
+        if keep_aspect:
+            if (float(x/y) >= float(fx/fy)):
+                y = int(float(fy/fx) * x)
+            elif (float(x/y) <= float(fx/fy)):
+                x = int(float(fx/fy) * y)
+
+    return (x, y)
+
+def phelp(stream=sys.stdout):
+    stream.write("usage: {0} infile [-c GEOMERTY] [-r ANGLE] [-s GEOMETRY] outfile\n".format(progname))
+    
+def perror(error):
+    sys.stderr.write(progname + ": " + error + "\n")
+
+__version__ = "a1"
+
+progname = sys.argv.pop(0)
+if "/" in progname:
+    progname = progname[progname.rindex("/")+1:]
+
+if len(sys.argv) == 0 or sys.argv[0] == "-h":
+    phelp()
+    sys.exit(0)
+
+filename = sys.argv.pop(0)
+if filename == "-s" or filename == "-c":
+    perror("no input file specified")
+    sys.exit(1)
+elif filename == "-":
+    image = sys.stdin
+else:
+    try:
+        image = open(filename, "r")
+    except:
+        perror("error opening the file" + filename)
+
+image = Image.open(image)
+while len(sys.argv) > 1:
+    operation = sys.argv.pop(0)
+
+    if operation == "-c":
+        try:
+            geometry = ext_geometry(sys.argv.pop(0), image)
+        except:
+            perror("no geometry provided for \"{0}\" operation\n".format(operation))
+            sys.exit(1)
+        if geometry[0] == "edit":
+            geometry = edit(image, geometry[1:])
+            #geometry = edit(ImageTk.PhotoImage(image), geometry[1:])
+        
+        if geometry == None:
+            perror("\"{0}\" operation canceled wia GUI".format(operation));
+            sys.exit(0)
+
+        image = image.crop(geometry)
+        image.load()
+
+    elif operation == "-r":
+        try:
+            angle = sys.argv.pop(0)
+        except:
+            perror("no angle provided for \"{0}\" operation\n".format(operation))
+        try:
+            angle = int(angle) * -1
+        except:
+            perror("wrong angle \"{0}\"\n".format(geometry))
+            sys.exit(1)
+        image = image.rotate(angle, Image.BICUBIC, True)
+
+    elif operation == "-s":
+        try:
+            geometry = set_geometry(sys.argv.pop(0), image)
+        except:
+            perror("no geometry provided for \"{0}\" operation\n".format(operation))
+            sys.exit(1)
+        image = image.resize(geometry, Image.ANTIALIAS)
+
+    else:
+        perror("wrong operation \"{0}\"".foramt(operation))
+        sys.exit(0)
+if len(sys.argv) == 0:
+    perror("no output file specified")
+    sys.exit(1)
+
+if sys.argv[0] == filename:
+    perror("infile and outfile are the same - nothing is written to disk")
+    sys.exit(0)
+
+filename = sys.argv[0]
+output = open(filename, "wb")
+image.save(output)
