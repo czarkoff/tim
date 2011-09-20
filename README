@@ -22,9 +22,13 @@ CURRENT STATE
 Currently the program does the very minimum it should, though some UI controls
 still misreact.
 
+DOCUMENTATION
+
+Currently the project contains a single useful file that can be chmodded and
+placed wherever one wants, so I don't think adding a manpage is a great idea.
+
 TODO
 
- * Write documentation;
  * Improve the Resizer UI;
  * Possibly make Resizer a normal standalone widget;
  * Possibly rewrite the program to use some modern libraries

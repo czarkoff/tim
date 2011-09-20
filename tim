@@ -269,8 +269,36 @@ def set_geometry(spec, img):
 
     return (x, y)
 
-def phelp(stream=sys.stdout):
+def phelp(stream=sys.stdout, detailed=False):
     stream.write("usage: {0} infile [-c GEOMERTY] [-r ANGLE] [-s GEOMETRY] outfile\n".format(progname))
+    stream.write("\n")
+    stream.write("options (filters):\n")
+    stream.write("  -c GEOMETRY  crop an image according to a GEOMETRY spec specified as:\n")
+    stream.write("               \"WIDTHxHEIGHT[+LEFT+TOP]\"; if LEFT and TOP are ommited,\n")
+    stream.write("               the UI is brought up to help You set them.\n")
+    stream.write("  -r ANGLE     rotate an image ANGLE degrees clockwise (if positive value)\n")
+    stream.write("               or counter clockwise (if negative)\n")
+    stream.write("  -s GEOMETRY  scale an image according to a GEOMETRY spec specified as:\n")
+    stream.write("               [!]WIDTHxHEIGHT or PERCENT%.\n")
+    stream.write("               By default, the image is resized to fit a box with the\n")
+    stream.write("               GEOMETRY specification while maintaining the aspect ratio.\n")
+    stream.write("               \"!\" in the beginning of the string overrides this behaviour\n")
+    if not detailed:
+        stream.write("  -h           print this help (with more detailed info)\n")
+        return
+    stream.write("  -h           print this help\n")
+    stream.write("\n")
+    stream.write("Filters are applied in order specified, eg.:\n")
+    stream.write("\n")
+    stream.write("    {0} old.jpg -s !500x700 -r 90 -c 100x100+20+20 -s 500x700 new.png\n".format(progname))
+    stream.write("\n")
+    stream.write("will import JPEG image, scale it to 500x700 regardless initial aspect ratio,\n")
+    stream.write("rotate the scaled image 90 degrees clockwise, crop rectangular area with\n")
+    stream.write("coodinates (20,20)-(120,120) out of the rotated and scaled image scale it\n")
+    stream.write("again to fit 500x700 box maintaining aspect ration and finaly export\n")
+    stream.write("the resulting image to file new.png in PNG format.\n")
+    stream.write("\n")
+    stream.write("Running {0} without filters is still useful as a mean of format conversion.\n".format(progname))
     
 def perror(error):
     sys.stderr.write(progname + ": " + error + "\n")
@@ -281,8 +309,12 @@ progname = sys.argv.pop(0)
 if "/" in progname:
     progname = progname[progname.rindex("/")+1:]
 
-if len(sys.argv) == 0 or sys.argv[0] == "-h":
+if len(sys.argv) == 0:
     phelp()
+    sys.exit(0)
+
+elif sys.argv[0] == "-h":
+    phelp(detailed=True)
     sys.exit(0)
 
 filename = sys.argv.pop(0)
