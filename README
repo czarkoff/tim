@@ -25,6 +25,13 @@ be done.
 
 TODO
 
+ * Write documentation;
  * Improve the Resizer UI;
  * Possibly make Resizer a normal standalone widget;
  * Possibly rewrite the program to use some modern libraries
+
+KNOWN BUGS
+
+When moving rectangle on canvas in crop UI the values of offsets get updated.
+But hadwriting these values has no effect yet. Don't do it, or things will
+break!!!
