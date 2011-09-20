@@ -23,10 +23,16 @@ class Resizer(Tkinter.Frame):
         self.state = True
         self.img = img
         self.status = status
+
         self.left = left
         self.upper = upper
         self.right = right
         self.lower = lower
+
+        self.pleft = self.left.get()
+        self.pupper = self.upper.get()
+        self.pright = self.right.get()
+        self.plower = self.lower.get()
         
         self.bbox = img.getbbox()
 
@@ -51,6 +57,16 @@ class Resizer(Tkinter.Frame):
 
         self.ebottom = Tkinter.Entry(self, textvariable=self.lower, width=5)
         self.ebottom.grid(row=2, column=1)
+
+        self.eleft.bind("<Key>", self.left_key)
+        self.etop.bind("<Key>", self.upper_key)
+        self.eright.bind("<Key>", self.right_key)
+        self.ebottom.bind("<Key>", self.lower_key)
+
+        self.eleft.bind("<Return>", self.left_value)
+        self.etop.bind("<Return>", self.upper_value)
+        self.eright.bind("<Return>", self.right_value)
+        self.ebottom.bind("<Return>", self.lower_value)
 
         self.b_cancel = Tkinter.Button(self, text="Abort", command=self.cancel)
         self.b_cancel.grid(row=2, column=0)
@@ -84,11 +100,70 @@ class Resizer(Tkinter.Frame):
             self.chkpair(self.left, self.right)
             self.chkpair(self.upper, self.lower)
             self.canvas.coords(self.rect, self.left.get(), self.upper.get(), self.bbox[2]-self.right.get(), self.bbox[3]-self.lower.get())
-            
 
     def br(self, event):
         self.state = True
         
+    def left_value(self, event):
+        self.right.set(self.right.get() - self.left.get() + self.pleft)
+        self.chkpair(self.left, self.right)
+        self.pleft = self.left.get()
+        self.pright = self.right.get()
+        self.canvas.coords(self.rect, self.left.get(), self.upper.get(), self.bbox[2]-self.right.get(), self.bbox[3]-self.lower.get())
+
+    def upper_value(self, event):
+        self.lower.set(self.lower.get() - self.upper.get() + self.pupper)
+        self.chkpair(self.upper, self.lower)
+        self.pupper = self.upper.get()
+        self.plower = self.lower.get()
+        self.canvas.coords(self.rect, self.left.get(), self.upper.get(), self.bbox[2]-self.right.get(), self.bbox[3]-self.lower.get())
+
+    def right_value(self, event):
+        self.left.set(self.left.get() - self.right.get() + self.pright)
+        self.chkpair(self.left, self.right)
+        self.pleft = self.left.get()
+        self.pright = self.right.get()
+        self.canvas.coords(self.rect, self.left.get(), self.upper.get(), self.bbox[2]-self.right.get(), self.bbox[3]-self.lower.get())
+
+    def lower_value(self, event):
+        self.upper.set(self.upper.get() - self.lower.get() + self.plower)
+        self.chkpair(self.upper, self.lower)
+        self.pupper = self.upper.get()
+        self.plower = self.lower.get()
+        self.canvas.coords(self.rect, self.left.get(), self.upper.get(), self.bbox[2]-self.right.get(), self.bbox[3]-self.lower.get())
+
+    def left_key(self, event):
+        if event.keysym == "Up":
+            self.left.set(self.left.get() + 1)
+        if event.keysym == "Down":
+            self.left.set(self.left.get() - 1)
+        if event.keysym == "Up" or event.keysym == "Down" or event.keysym == "Tab":
+            self.left_value(event)
+
+    def upper_key(self, event):
+        if event.keysym == "Up":
+            self.upper.set(self.upper.get() + 1)
+        if event.keysym == "Down":
+            self.upper.set(self.upper.get() - 1)
+        if event.keysym == "Up" or event.keysym == "Down" or event.keysym == "Tab":
+            self.upper_value(event)
+
+    def right_key(self, event):
+        if event.keysym == "Up":
+            self.right.set(self.right.get() + 1)
+        if event.keysym == "Down":
+            self.right.set(self.right.get() - 1)
+        if event.keysym == "Up" or event.keysym == "Down" or event.keysym == "Tab":
+            self.right_value(event)
+
+    def lower_key(self, event):
+        if event.keysym == "Up":
+            self.lower.set(self.lower.get() + 1)
+        if event.keysym == "Down":
+            self.lower.set(self.lower.get() - 1)
+        if event.keysym == "Up" or event.keysym == "Down" or event.keysym == "Tab":
+            self.lower_value(event)
+
     def cancel(self):
         self.quit()
 
