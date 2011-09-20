@@ -328,7 +328,7 @@ except IOError as error:
     perror("{0} (input): {1}".format(imagefile, error[-1]))
     sys.exit(1)
 except:
-    perror("error opening file \"{0}\"".format(imagefile))
+    perror("{0} (input): unknown error; please report the traceback:".format(imagefile))
     raise
     sys.exit(1)
 
@@ -387,7 +387,7 @@ except IOError as error:
     perror("{0} (output): {1}".format(imagefile, error[-1]))
     sys.exit(1)
 except:
-    perror("error opening file \"{0}\"".format(imagefile))
+    perror("{0} (output): unknown error; please report the traceback:".format(imagefile))
     raise
     sys.exit(1)
 
