@@ -353,8 +353,15 @@ while len(sys.argv) > 1:
             perror("\"{0}\" operation canceled wia GUI".format(operation));
             sys.exit(0)
 
-        image = image.crop(geometry)
-        image.load()
+        try:
+            image = image.crop(geometry)
+        except MemoryError:
+            perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
+            sys.exit(1)
+        except:
+            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
+            raise
+            sys.exit(1)
 
     elif operation == "-r":
         angle = sys.argv.pop(0)
@@ -363,7 +370,15 @@ while len(sys.argv) > 1:
         except ValueError as error:
             perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
             sys.exit(1)
-        image = image.rotate(angle, Image.BICUBIC, True)
+        try:
+            image = image.rotate(angle, Image.BICUBIC, True)
+        except MemoryError:
+            perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
+            sys.exit(1)
+        except:
+            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
+            raise
+            sys.exit(1)
 
     elif operation == "-s":
         try:
@@ -375,7 +390,15 @@ while len(sys.argv) > 1:
             perror("{0} (input): unknown error; please report the traceback:".format(imagefile))
             raise
             sys.exit(1)
-        image = image.resize(geometry, Image.ANTIALIAS)
+        try:
+            image = image.resize(geometry, Image.ANTIALIAS)
+        except MemoryError:
+            perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
+            sys.exit(1)
+        except:
+            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
+            raise
+            sys.exit(1)
 
     else:
         perror("wrong operation \"{0}\"".format(operation))
