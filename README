@@ -19,8 +19,10 @@ REQUIREMENTS
 
 CURRENT STATE
 
-Currently the program does the very minimum it should, though some UI controls
-still misreact.
+It works and seems to be in a fairly good shape. A test on my system has given
+the following results: tim is about 14% faster then ImageMagick's convert on
+the same operations. While tim is no way a replacement for convert, it is
+fairly useful in its scope.
 
 DOCUMENTATION
 
@@ -35,6 +37,5 @@ TODO
 
 KNOWN BUGS
 
- * When moving rectangle on canvas in crop UI the values of offsets get
-   updated. But handwriting these values has no effect yet. Don't do it, or
-   things will break!!!
+ * PIL seems to be silently spoiling some images. The corresponding error
+   message is shown.
