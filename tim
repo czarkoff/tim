@@ -341,8 +341,11 @@ while len(sys.argv) > 1:
         except ValueError as error:
             perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
             sys.exit(1)
+        except TypeError as error:
+            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
+            sys.exit(1)
         except:
-            perror("{0} (input): unknown error; please report the traceback:".format(imagefile))
+            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
             raise
             sys.exit(1)
             
@@ -357,6 +360,9 @@ while len(sys.argv) > 1:
             image = image.crop(geometry)
         except MemoryError:
             perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
+            sys.exit(1)
+        except TypeError as error:
+            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
             sys.exit(1)
         except:
             perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
@@ -385,6 +391,9 @@ while len(sys.argv) > 1:
             geometry = set_geometry(sys.argv.pop(0), image)
         except ValueError as error:
             perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
+            sys.exit(1)
+        except TypeError as error:
+            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
             sys.exit(1)
         except:
             perror("{0} (input): unknown error; please report the traceback:".format(imagefile))
