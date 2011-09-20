@@ -20,7 +20,7 @@ REQUIREMENTS
 CURRENT STATE
 
 It works and seems to be in a fairly good shape. A test on my system has given
-the following results: tim is about 14% faster then ImageMagick's convert on
+the following results: tim is about 22% faster then ImageMagick's convert on
 the same operations. While tim is no way a replacement for convert, it is
 fairly useful in its scope.
 
