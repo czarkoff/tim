@@ -19,9 +19,8 @@ REQUIREMENTS
 
 CURRENT STATE
 
-Currently the program does the very minimum it should. It lacks documentation
-and several sanity checks (it may do strange things). Some more work needs to
-be done.
+Currently the program does the very minimum it should, though some UI controls
+still misreact.
 
 TODO
 
@@ -32,6 +31,6 @@ TODO
 
 KNOWN BUGS
 
-When moving rectangle on canvas in crop UI the values of offsets get updated.
-But hadwriting these values has no effect yet. Don't do it, or things will
-break!!!
+ * When moving rectangle on canvas in crop UI the values of offsets get
+   updated. But handwriting these values has no effect yet. Don't do it, or
+   things will break!!!

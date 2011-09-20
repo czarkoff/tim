@@ -27,50 +27,67 @@ class Resizer(Tkinter.Frame):
         self.upper = upper
         self.right = right
         self.lower = lower
+        
+        self.bbox = img.getbbox()
 
         Tkinter.Frame.__init__(self, master, **kw)
-        etop = Tkinter.Entry(self, textvariable=self.upper, width=5)
-        etop.grid(row=0, column=1)
+        self.etop = Tkinter.Entry(self, textvariable=self.upper, width=5)
+        self.etop.grid(row=0, column=1)
         
-        eleft = Tkinter.Entry(self, textvariable=self.left, width=5)
-        eleft.grid(row=1, column=0)
+        self.eleft = Tkinter.Entry(self, textvariable=self.left, width=5)
+        self.eleft.grid(row=1, column=0)
 
         self.canvas = Tkinter.Canvas(self, width=img.getbbox()[2], height=img.getbbox()[3])
         self.photo = ImageTk.PhotoImage(self.img)
         self.canvas.create_image(0, 0, anchor=Tkinter.NW, image = self.photo);
         self.canvas.grid(row=1, column=1)
 
-        self.rect = self.canvas.create_rectangle(self.left.get(), self.upper.get(), self.right.get(), self.lower.get())
-        self.canvas.bind("<Button-1>", self.bp)
+        self.rect = self.canvas.create_rectangle(self.left.get(), self.upper.get(), self.bbox[2]-self.right.get(), self.bbox[3]-self.lower.get())
+        self.canvas.bind("<B1-Motion>", self.bp)
         self.canvas.bind("<ButtonRelease-1>", self.br)
 
-        eright = Tkinter.Entry(self, textvariable=self.right, width=5)
-        eright.grid(row=1, column=2)
+        self.eright = Tkinter.Entry(self, textvariable=self.right, width=5)
+        self.eright.grid(row=1, column=2)
 
-        ebottom = Tkinter.Entry(self, textvariable=self.lower, width=5)
-        ebottom.grid(row=2, column=1)
+        self.ebottom = Tkinter.Entry(self, textvariable=self.lower, width=5)
+        self.ebottom.grid(row=2, column=1)
 
-        b_cancel = Tkinter.Button(self, text="Abort", command=self.cancel)
-        b_cancel.grid(row=2, column=0)
+        self.b_cancel = Tkinter.Button(self, text="Abort", command=self.cancel)
+        self.b_cancel.grid(row=2, column=0)
         
-        b_crop = Tkinter.Button(self, text="Crop", command=self.crop)
-        b_crop.grid(row=2, column=2)
+        self.b_crop = Tkinter.Button(self, text="Crop", command=self.crop)
+        self.b_crop.grid(row=2, column=2)
+
+    def chkpair(self, a, b):
+        if a.get() < 0:
+            b.set(b.get() + a.get())
+            a.set(0)
+        elif b.get() < 0:
+            a.set(a.get() + b.get())
+            b.set(0)
 
     def bp(self, event):
+        canvas = event.widget   
         if self.state:
             self.state = False
-            self.x = event.x
-            self.y = event.y
+            self.x = canvas.canvasx(event.x)
+            self.y = canvas.canvasy(event.y)
+        else:
+            x = int(canvas.canvasx(event.x) - self.x)
+            y = int(canvas.canvasy(event.y) - self.y)
+            self.x = canvas.canvasx(event.x)
+            self.y = canvas.canvasy(event.y)
+            self.left.set(self.left.get() + x)
+            self.upper.set(self.upper.get() + y)
+            self.right.set(self.right.get() - x)
+            self.lower.set(self.lower.get() - y)
+            self.chkpair(self.left, self.right)
+            self.chkpair(self.upper, self.lower)
+            self.canvas.coords(self.rect, self.left.get(), self.upper.get(), self.bbox[2]-self.right.get(), self.bbox[3]-self.lower.get())
+            
 
     def br(self, event):
         self.state = True
-        x = event.x - self.x
-        y = event.y - self.y
-        self.left.set(self.left.get() + x)
-        self.right.set(self.right.get() + x)
-        self.upper.set(self.upper.get() + y)
-        self.lower.set(self.lower.get() + y)
-        self.canvas.coords(self.rect, self.left.get(), self.upper.get(), self.right.get(), self.lower.get())
         
     def cancel(self):
         self.quit()
@@ -87,19 +104,21 @@ def edit(img, geometry):
     upper = Tkinter.IntVar()
     right = Tkinter.IntVar()
     lower = Tkinter.IntVar()
+    
+    bbox = img.getbbox()
 
     status.set(0)
     left.set(0)
     upper.set(0)
-    right.set(geometry[2])
-    lower.set(geometry[3])
+    right.set(bbox[2] - geometry[2])
+    lower.set(bbox[2] - geometry[3])
     resizer = Resizer(root, status, img, left, upper, right, lower)
     resizer.pack()
 
     root.mainloop()
 
     if status.get() == 1:
-        return (left.get(), upper.get(), right.get(), lower.get())
+        return (left.get(), upper.get(), bbox[2]-right.get(), bbox[3]-lower.get())
     else:
         return
 
@@ -130,7 +149,7 @@ def ext_geometry(spec, img):
         upper = lower - upper
         
     elif spec.count("+") == 0:
-        return ("edit",) + bbox[2:] +  set_geometry(spec[:-1], img)
+        return ("edit",) + bbox[2:] +  set_geometry("!" + spec, img)
 
     else:
         raise ValueError("Wrong value")
@@ -158,9 +177,10 @@ def set_geometry(spec, img):
     elif spec.count("x") != 1:
         raise ValueError("Wrong value")
     else:
-        i = spec.index("x")
-        x = int(spec[:i])
-        y = int(spec[i+1:])
+        x, y = spec.split("x")
+
+        x = int(x)
+        y = int(y)
         
         if keep_aspect:
             if (float(x/y) >= float(fx/fy)):
