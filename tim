@@ -231,7 +231,7 @@ def ext_geometry(spec, img):
         return ("edit",) + bbox[2:] +  set_geometry("!" + spec, img)
 
     else:
-        raise ValueError("Wrong value")
+        raise ValueError("malformed spec \"{0}\"".format(spec))
 
     return (left, upper, right, lower)
 
