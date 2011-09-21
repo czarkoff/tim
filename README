@@ -17,6 +17,16 @@ REQUIREMENTS
  * Any graphical UI capable of Tk (X11, Windows, MacOS X etc.)
  * Mouse
 
+INSTALLATION
+
+On UNIX-like system it is just as simple as:
+
+$ chmod +x tim
+$ cp tim ~/bin/tim
+
+On Windows You should rename the file "tim" to whatever-you-like-to-call-it.py
+(I would prefer "tim.py") and put it somewhere in Your PATH.
+
 CURRENT STATE
 
 It works and seems to be in a fairly good shape. A test on my system has given
@@ -27,13 +37,17 @@ fairly useful in its scope.
 DOCUMENTATION
 
 Currently the project contains a single useful file that can be chmodded and
-placed wherever one wants, so I don't think adding a manpage is a great idea.
+placed wherever one wants within the PATH, so I don't think adding a manpage
+is a great idea.
+
+Instead calling "tim" (or whatever You rename executable to) without options
+will give some help. Calling "tim -h" will give more help and a usage example.
 
 TODO
 
- * Improve the CropPhoto UI;
+ * Rethink the CropPhoto UI;
  * Possibly make CropPhoto a normal standalone widget;
- * Possibly rewrite the program to use some modern libraries
+ * Possibly rewrite the program to use another imaging library.
 
 KNOWN BUGS
 
