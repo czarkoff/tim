@@ -4,7 +4,7 @@
 <meta charset='utf-8'>
 <title>czarkoff/tim @ GitHub</title>
 <style type="text/css">
-body { margin-top: 1.0em; background-color: #000000; font-family: Helvetica, Arial, FreeSans, san-serif; color: #ffffff; }
+body { margin-top: 1.0em; background-color: #333; font-family: Helvetica, Arial, FreeSans, san-serif; color: #ffffff; }
 #container { margin: 0 auto; width: 700px; }
 h1 { font-size: 3.8em; color: #ffffff; margin-bottom: 3px; }
 h1 .small { font-size: 0.4em; }
@@ -14,7 +14,7 @@ h3 { text-align: center; color: #ffffff; }
 a { color: #ffffff; }
 .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
 .download { float: right; }
-pre { background: #000; color: #fff; padding: 15px;}
+pre { background: #000; color: #ccc; padding: 15px;}
 hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
 .footer { text-align:center; padding-top:30px; font-style: italic; }
 </style>
@@ -33,6 +33,12 @@ hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
 <div class="description">
 Tiny image manipulator
 </div>
+<p>
+The idea of a program came to me when I had to create 4:3 thumbs for a group of different orientation images. I had to do my cropping with GIMP which isn't so suitable for such kind of manipulations.
+</p>
+<p>
+The program takes an image and applies a given set of filters. One of them - cropping - is done in graphical mode.
+</p>
 <h2>Dependencies</h2>
 <ul>
 <li>
@@ -49,9 +55,48 @@ Any graphical UI capable of Tk (X11, Windows, MacOS X etc.)
 </li>
 </ul>
 <h2>Install</h2>
+<p>
+The program conists of a single executable python script, so on UNIX-like You only need to:
+</p>
 <pre>
 chmod +x tim
 cp tim ~/bin/tim
+</pre>
+<p>
+On Windows You should probably place a script to some known place and invoke it as "python /path/to/tim infile op1 arg op2 arg outfile" (given that Your python installation is done the wright way.
+</p>
+<h2>Documentation</h2>
+<p>
+Currently the project contains a single useful file that can be chmodded and placed wherever one wants, so I don't think adding a manpage is a great idea.
+</p>
+<pre>
+ $ tim -h
+usage: tim infile [-c GEOMERTY] [-r ANGLE] [-s GEOMETRY] outfile
+
+options (filters):
+  -c GEOMETRY  crop an image according to a GEOMETRY spec specified as:
+               "WIDTHxHEIGHT[+LEFT+TOP]"; if LEFT and TOP are ommited,
+               the UI is brought up to help You set them.
+  -r ANGLE     rotate an image ANGLE degrees clockwise (if positive value)
+               or counter clockwise (if negative)
+  -s GEOMETRY  scale an image according to a GEOMETRY spec specified as:
+               [!]WIDTHxHEIGHT or PERCENT%.
+               By default, the image is resized to fit a box with the
+               GEOMETRY specification while maintaining the aspect ratio.
+               "!" in the beginning of the string overrides this behaviour
+  -h           print this help
+
+Filters are applied in order specified, eg.:
+
+    tim old.jpg -s !500x700 -r 90 -c 100x100+20+20 -s 500x700 new.png
+
+will import JPEG image, scale it to 500x700 regardless initial aspect ratio,
+rotate the scaled image 90 degrees clockwise, crop rectangular area with
+coodinates (20,20)-(120,120) out of the rotated and scaled image scale it
+again to fit 500x700 box maintaining aspect ration and finaly export
+the resulting image to file new.png in PNG format.
+
+Running tim without filters is still useful as a mean of format conversion.
 </pre>
 <h2>License</h2>
 <pre>
@@ -71,7 +116,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 </pre>
 <h2>Download</h2>
 <p>
-You can download this project in either <a href="http://github.com/czarkoff/tim/zipball/master">zip</a> or <a href="http://github.com/czarkoff/tim/tarball/master">tar</a> formats.
+You can download this project in either <a href="http://github.com/czarkoff/tim/zipball/master">zip</a> or <a href="http://github.com/czarkoff/tim/tarball/master">tar</a> formats. Or You can jus grab an <a href="https://raw.github.com/czarkoff/tim/master/tim">uncompressed script</a>
 </p>
 <p>
 You can also clone the project with <a href="http://git-scm.com">Git</a> by running:
