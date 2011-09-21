@@ -18,6 +18,43 @@
 import os.path, re, sys, Tkinter
 from PIL import Image, ImageTk
 
+def phelp(detailed=False):
+    sys.stdout.write("usage: {0} infile [-c GEOMERTY] [-r ANGLE] [-s GEOMETRY] outfile\n".format(progname))
+    sys.stdout.write("\n")
+    sys.stdout.write("options (filters):\n")
+    sys.stdout.write("  -c GEOMETRY  crop an image according to a GEOMETRY specified as either\n")
+    sys.stdout.write("               absolute coordinates \"{LEFT},{TOP},{BOTTOM},{RIGHT}\"\n")
+    sys.stdout.write("               \"{WIDTH}x{HEIGHT}c\" to crop image from the center of image\n")
+    sys.stdout.write("               or \"{WIDTH}x{HEIGHT}{+LEFT|-RIGHT}{+TOP|-BOTTOM}\"; if LEFT,\n")
+    sys.stdout.write("               RIGHT, TOP and BOTTOM are ommited, the UI is brought up\n")
+    sys.stdout.write("               to help You set them.\n")
+    sys.stdout.write("  -r ANGLE     rotate an image ANGLE degrees clockwise (if positive value)\n")
+    sys.stdout.write("               or counter clockwise (if negative)\n")
+    sys.stdout.write("  -s GEOMETRY  scale an image according to a GEOMETRY spec specified as:\n")
+    sys.stdout.write("               \"{WIDTH},{HEIGHT}\", \"[!]{WIDTH}x{HEIGHT}\" or \"{PERCENT}%\".\n")
+    sys.stdout.write("               By default, the image is resized to fit a box with the\n")
+    sys.stdout.write("               GEOMETRY specification while maintaining the aspect ratio.\n")
+    sys.stdout.write("               \"!\" in the beginning of the string overrides this behaviour\n")
+    if not detailed:
+        sys.stdout.write("  -h           print this help (with more detailed info)\n")
+        return
+    sys.stdout.write("  -h           print this help\n")
+    sys.stdout.write("\n")
+    sys.stdout.write("Filters are applied in order specified, eg.:\n")
+    sys.stdout.write("\n")
+    sys.stdout.write("    {0} old.jpg -s !500x700 -r 90 -c 100x100+20+20 -s 500x700 new.png\n".format(progname))
+    sys.stdout.write("\n")
+    sys.stdout.write("will import JPEG image, scale it to 500x700 regardless initial aspect ratio,\n")
+    sys.stdout.write("rotate the scaled image 90 degrees clockwise, crop rectangular area with\n")
+    sys.stdout.write("coodinates (20,20)-(120,120) out of the rotated and scaled image scale it\n")
+    sys.stdout.write("again to fit 500x700 box maintaining aspect ration and finaly export\n")
+    sys.stdout.write("the resulting image to file new.png in PNG format.\n")
+    sys.stdout.write("\n")
+    sys.stdout.write("Running {0} without filters is still useful as a mean of format conversion.\n".format(progname))
+    
+def perror(error):
+    sys.stderr.write(progname + ": " + error + "\n")
+
 class CropPhoto(Tkinter.Frame):
     def __init__(self, master, status, img, left, upper, right, lower, buttons=False, **kw):
         self.state = True
@@ -305,43 +342,6 @@ def base_geometry(spec, bbox):
             raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
         
     return (x, y)
-
-def phelp(detailed=False):
-    sys.stdout.write("usage: {0} infile [-c GEOMERTY] [-r ANGLE] [-s GEOMETRY] outfile\n".format(progname))
-    sys.stdout.write("\n")
-    sys.stdout.write("options (filters):\n")
-    sys.stdout.write("  -c GEOMETRY  crop an image according to a GEOMETRY specified as either\n")
-    sys.stdout.write("               absolute coordinates \"{LEFT},{TOP},{BOTTOM},{RIGHT}\"\n")
-    sys.stdout.write("               \"{WIDTH}x{HEIGHT}c\" to crop image from the center of image\n")
-    sys.stdout.write("               or \"{WIDTH}x{HEIGHT}{+LEFT|-RIGHT}{+TOP|-BOTTOM}\"; if LEFT,\n")
-    sys.stdout.write("               RIGHT, TOP and BOTTOM are ommited, the UI is brought up\n")
-    sys.stdout.write("               to help You set them.\n")
-    sys.stdout.write("  -r ANGLE     rotate an image ANGLE degrees clockwise (if positive value)\n")
-    sys.stdout.write("               or counter clockwise (if negative)\n")
-    sys.stdout.write("  -s GEOMETRY  scale an image according to a GEOMETRY spec specified as:\n")
-    sys.stdout.write("               \"{WIDTH},{HEIGHT}\", \"[!]{WIDTH}x{HEIGHT}\" or \"{PERCENT}%\".\n")
-    sys.stdout.write("               By default, the image is resized to fit a box with the\n")
-    sys.stdout.write("               GEOMETRY specification while maintaining the aspect ratio.\n")
-    sys.stdout.write("               \"!\" in the beginning of the string overrides this behaviour\n")
-    if not detailed:
-        sys.stdout.write("  -h           print this help (with more detailed info)\n")
-        return
-    sys.stdout.write("  -h           print this help\n")
-    sys.stdout.write("\n")
-    sys.stdout.write("Filters are applied in order specified, eg.:\n")
-    sys.stdout.write("\n")
-    sys.stdout.write("    {0} old.jpg -s !500x700 -r 90 -c 100x100+20+20 -s 500x700 new.png\n".format(progname))
-    sys.stdout.write("\n")
-    sys.stdout.write("will import JPEG image, scale it to 500x700 regardless initial aspect ratio,\n")
-    sys.stdout.write("rotate the scaled image 90 degrees clockwise, crop rectangular area with\n")
-    sys.stdout.write("coodinates (20,20)-(120,120) out of the rotated and scaled image scale it\n")
-    sys.stdout.write("again to fit 500x700 box maintaining aspect ration and finaly export\n")
-    sys.stdout.write("the resulting image to file new.png in PNG format.\n")
-    sys.stdout.write("\n")
-    sys.stdout.write("Running {0} without filters is still useful as a mean of format conversion.\n".format(progname))
-    
-def perror(error):
-    sys.stderr.write(progname + ": " + error + "\n")
 
 __version__ = "a1"
 
