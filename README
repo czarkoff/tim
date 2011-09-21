@@ -31,8 +31,8 @@ placed wherever one wants, so I don't think adding a manpage is a great idea.
 
 TODO
 
- * Improve the Resizer UI;
- * Possibly make Resizer a normal standalone widget;
+ * Improve the CropPhoto UI;
+ * Possibly make CropPhoto a normal standalone widget;
  * Possibly rewrite the program to use some modern libraries
 
 KNOWN BUGS
