@@ -30,9 +30,10 @@ On Windows You should rename the file "tim" to whatever-you-like-to-call-it.py
 CURRENT STATE
 
 It works and seems to be in a fairly good shape. A test on my system has given
-the following results: tim is about 22% faster then ImageMagick's convert on
-the same operations. While tim is no way a replacement for convert, it is
-fairly useful in its scope.
+the following results: tim is only about 3% slower then ImageMagick's convert
+on the same operations, which is fairly nice as tim ads an extra step of
+rotating images according to EXIF data, providing the correctly orientated
+PNGs, which convert doesn't.
 
 DOCUMENTATION
 
