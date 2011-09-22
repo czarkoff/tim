@@ -27,6 +27,7 @@ def phelp(detailed=False):
     sys.stdout.write("  -f           flip image horizontally\n")
     sys.stdout.write("  +f           flip image vertically\n")
     sys.stdout.write("  -r ANGLE     rotate an image ANGLE degrees clockwise\n")
+    sys.stdout.write("  -q QUALITY   specify output quality (will be ignored if unapplicable)\n")
     sys.stdout.write("  -s GEOMETRY  scale an image to GEOMETRY\n")
     if not detailed:
         sys.stdout.write("  -h           print detailed help\n")
@@ -384,7 +385,7 @@ def base_geometry(spec, bbox):
         
     return (x, y)
 
-__version__ = "2"
+__version__ = "3-alpha"
 
 progname = os.path.basename(sys.argv.pop(0))
 
@@ -412,26 +413,28 @@ except:
     sys.exit(1)
 
 try:
-    if image._getexif()[274] == 1:
+    orientation = image._getexif()[274]
+    if orientation == 1:
         pass
-    elif image._getexif()[274] == 2:
+    elif orientation == 2:
         image = image.transpose(Image.FLIP_LEFT_RIGHT)
-    elif image._getexif()[274] == 3:
+    elif orientation == 3:
         image = image.transpose(Image.ROTATE_180)
-    elif image._getexif()[274] == 4:
+    elif orientation == 4:
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
-    elif image._getexif()[274] == 5:
+    elif orientation == 5:
         image = image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_90)
-    elif image._getexif()[274] == 6:
+    elif orientation == 6:
         image = image.transpose(Image.ROTATE_270)
-    elif image._getexif()[274] == 7:
+    elif orientation == 7:
         image = image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_270)
-    elif image._getexif()[274] == 8:
+    elif orientation == 8:
         image = image.transpose(Image.ROTATE_90)
 except:
     pass
 
 operations = 0
+quality = 85
 while len(sys.argv) > 1:
     operation = sys.argv.pop(0)
     operations += 1
@@ -529,12 +532,25 @@ while len(sys.argv) > 1:
                 raise
                 sys.exit(1)
 
+    elif operation == "-q":
+        try:
+            quality = int(sys.argv.pop(0))
+        except ValueError as error:
+            perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
+            sys.exit(1)
+        except TypeError as error:
+            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
+            sys.exit(1)
+        except:
+            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
+            raise
+            sys.exit(1)
+
     elif operation == "-s":
         try:
             geometry = resize_geometry(sys.argv.pop(0), image.getbbox())
         except ValueError as error:
             perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
-            raise
             sys.exit(1)
         except TypeError as error:
             perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
@@ -559,7 +575,7 @@ while len(sys.argv) > 1:
 
 try:
     imagefile = sys.argv.pop(0)
-    image = image.save(imagefile)
+    image = image.save(imagefile, quality=quality)
 except IOError as error:
     perror("{0} (output): {1}".format(imagefile, error[-1]))
     sys.exit(1)
