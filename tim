@@ -33,6 +33,9 @@ def phelp(detailed=False):
         return
     sys.stdout.write("  -h           print this help\n")
     sys.stdout.write("\n")
+    sys.stdout.write("All EXIF data is stripped from infile. If EXIF orientation was specified, image\n")
+    sys.stdout.write("it is applied.\n")
+    sys.stdout.write("\n")
     sys.stdout.write("GEOMETRY for \"-s\" (scale) operation can be secified as:\n")
     sys.stdout.write("  * XxY (X and Y are either absolute values or percentages)\n")
     sys.stdout.write("  * X,Y\n")
@@ -74,7 +77,8 @@ def phelp(detailed=False):
     sys.stdout.write("\n")
     sys.stdout.write("$ {0} file.jpg -c 50%x50% file.jpg\n".format(progname))
     sys.stdout.write("\n")
-    sys.stdout.write("Bring up UI to choose the position to crop 50%x50% area and crop it *IN PLACE*.\n".format(progname))
+    sys.stdout.write("Bring up UI to choose the position to crop 50%x50% area and strip EXIF data from\n")
+    sys.stdout.write("image it *IN PLACE*.\n")
     sys.stdout.write("\n")
     sys.stdout.write("$ {0} old.jpg new.png\n".format(progname))
     sys.stdout.write("\n")
@@ -407,6 +411,28 @@ except:
     raise
     sys.exit(1)
 
+try:
+    if image._getexif()[274] == 1:
+        pass
+    elif image._getexif()[274] == 2:
+        image = image.transpose(Image.FLIP_LEFT_RIGHT)
+    elif image._getexif()[274] == 3:
+        image = image.transpose(Image.ROTATE_180)
+    elif image._getexif()[274] == 4:
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+    elif image._getexif()[274] == 5:
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+        image = image.transpose(Image.ROTATE_90)
+    elif image._getexif()[274] == 6:
+        image = image.transpose(Image.ROTATE_270)
+    elif image._getexif()[274] == 7:
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+        image = image.transpose(Image.ROTATE_270)
+    elif image._getexif()[274] == 8:
+        image = image.transpose(Image.ROTATE_90)
+except:
+    pass
+
 operations = 0
 while len(sys.argv) > 1:
     operation = sys.argv.pop(0)
@@ -525,7 +551,7 @@ try:
 except IOError as error:
     perror("{0} (output): {1}".format(imagefile, error[-1]))
     sys.exit(1)
-except KeyError:
+except (KeyError, IndexError):
     perror("no output file specified")
     sys.exit(1)
 except:
