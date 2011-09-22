@@ -52,4 +52,4 @@ TODO
 KNOWN BUGS
 
  * PIL seems to be silently spoiling some images. The corresponding error
-   message is shown.
+   message is shown if problem found.

@@ -19,38 +19,63 @@ import os.path, re, sys, Tkinter
 from PIL import Image, ImageTk
 
 def phelp(detailed=False):
+    sys.stdout.write("{0} {1}\n".format(progname, __version__))
     sys.stdout.write("usage: {0} infile [-c GEOMERTY] [-r ANGLE] [-s GEOMETRY] outfile\n".format(progname))
     sys.stdout.write("\n")
     sys.stdout.write("options (filters):\n")
-    sys.stdout.write("  -c GEOMETRY  crop an image according to a GEOMETRY specified as either\n")
-    sys.stdout.write("               absolute coordinates \"{LEFT},{TOP},{BOTTOM},{RIGHT}\"\n")
-    sys.stdout.write("               \"{WIDTH}x{HEIGHT}c\" to crop image from the center of image\n")
-    sys.stdout.write("               or \"{WIDTH}x{HEIGHT}{+LEFT|-RIGHT}{+TOP|-BOTTOM}\"; if LEFT,\n")
-    sys.stdout.write("               RIGHT, TOP and BOTTOM are ommited, the UI is brought up\n")
-    sys.stdout.write("               to help You set them.\n")
-    sys.stdout.write("  -r ANGLE     rotate an image ANGLE degrees clockwise (if positive value)\n")
-    sys.stdout.write("               or counter clockwise (if negative)\n")
-    sys.stdout.write("  -s GEOMETRY  scale an image according to a GEOMETRY spec specified as:\n")
-    sys.stdout.write("               \"{WIDTH},{HEIGHT}\", \"[!]{WIDTH}x{HEIGHT}\" or \"{PERCENT}%\".\n")
-    sys.stdout.write("               By default, the image is resized to fit a box with the\n")
-    sys.stdout.write("               GEOMETRY specification while maintaining the aspect ratio.\n")
-    sys.stdout.write("               \"!\" in the beginning of the string overrides this behaviour\n")
+    sys.stdout.write("  -c GEOMETRY  crop an area with the specified GEOMETRY from image\n")
+    sys.stdout.write("  -r ANGLE     rotate an image ANGLE degrees clockwise\n")
+    sys.stdout.write("  -s GEOMETRY  scale an image to GEOMETRY\n")
     if not detailed:
-        sys.stdout.write("  -h           print this help (with more detailed info)\n")
+        sys.stdout.write("  -h           print detailed help\n")
         return
     sys.stdout.write("  -h           print this help\n")
     sys.stdout.write("\n")
-    sys.stdout.write("Filters are applied in order specified, eg.:\n")
+    sys.stdout.write("GEOMETRY for \"-s\" (scale) operation can be secified as:\n")
+    sys.stdout.write("  * XxY (X and Y are either absolute values or percentages)\n")
+    sys.stdout.write("  * X,Y\n")
     sys.stdout.write("\n")
-    sys.stdout.write("    {0} old.jpg -s !500x700 -r 90 -c 100x100+20+20 -s 500x700 new.png\n".format(progname))
+    sys.stdout.write("By default, the \"-s\" (scale) operation doesn't maintain aspect ratio of image.\n")
+    sys.stdout.write("When GEOMETRY is specified as XxY with absolute values, this behaviour may be \n")
+    sys.stdout.write("overriden using postfixes \"A\" (new dimentions are at least as specified) or \"a\"\n")
+    sys.stdout.write("(new dimentions are at most as specified).\n")
     sys.stdout.write("\n")
-    sys.stdout.write("will import JPEG image, scale it to 500x700 regardless initial aspect ratio,\n")
-    sys.stdout.write("rotate the scaled image 90 degrees clockwise, crop rectangular area with\n")
-    sys.stdout.write("coodinates (20,20)-(120,120) out of the rotated and scaled image scale it\n")
-    sys.stdout.write("again to fit 500x700 box maintaining aspect ration and finaly export\n")
-    sys.stdout.write("the resulting image to file new.png in PNG format.\n")
+    sys.stdout.write("GEOMETRY for \"-c\" (crop) operation can be secified as:\n")
     sys.stdout.write("\n")
-    sys.stdout.write("Running {0} without filters is still useful as a mean of format conversion.\n".format(progname))
+    sys.stdout.write("  * XxY (X and Y are either absolute values or percentages)\n")
+    sys.stdout.write("  * A,B,C,D\n")
+    sys.stdout.write("\n")
+    sys.stdout.write("The two-value spec can be ammended with \"c\" postfix to specify that the area\n")
+    sys.stdout.write("should be croped from center of image. Another way to specify area is to add a\n")
+    sys.stdout.write("pair of offsets in form of two subsequent signed numbers, first being the\n")
+    sys.stdout.write("horizontal offset (positive - from left, negative - from right), second -\n")
+    sys.stdout.write("the vertical one (positive - from top, negative - from bottom). Elsewise the UI\n")
+    sys.stdout.write("will be brough up help You choose the crp area position\n")
+    sys.stdout.write("\n")
+    sys.stdout.write("The four-value spec is taken as coordinates of topleft and bottomright pixels\n")
+    sys.stdout.write("(A,B)(C,D) of crop area. C must be greater then A, D must be greater then B.\n")
+    sys.stdout.write("\n")
+    sys.stdout.write("Every operation is performed on result of previous operation.\n")
+    sys.stdout.write("\n")
+    sys.stdout.write("Correct {0} invokation examples:\n".format(progname))
+    sys.stdout.write("\n")
+    sys.stdout.write("$ {0} old.jpg -s 500x700 -r 90 -c 100x100+20-10 -s 500x700A new.png\n".format(progname))
+    sys.stdout.write("\n")
+    sys.stdout.write("  1. scale image to dimensions 500x700 regardless initial aspect ratio;\n")
+    sys.stdout.write("  2. rotate the result 90 degrees clockwise;\n")
+    sys.stdout.write("  3. from the result crop the 100x100 area offset by 20 from left and 10 from\n")
+    sys.stdout.write("     bottom;\n")
+    sys.stdout.write("  4. scale the result maintaining its aspect ratio to make its width no less;\n")
+    sys.stdout.write("     then 500 and its height no less then 700\n")
+    sys.stdout.write("  5. export the result to file new.png in PNG format.\n")
+    sys.stdout.write("\n")
+    sys.stdout.write("$ {0} file.jpg -c 50%x50% file.jpg\n".format(progname))
+    sys.stdout.write("\n")
+    sys.stdout.write("Bring up UI to choose the position to crop 50%x50% area and crop it *IN PLACE*.\n".format(progname))
+    sys.stdout.write("\n")
+    sys.stdout.write("$ {0} old.jpg new.png\n".format(progname))
+    sys.stdout.write("\n")
+    sys.stdout.write("Convert image from JPEG to PNG format.\n".format(progname))
     
 def perror(error):
     sys.stderr.write(progname + ": " + error + "\n")
@@ -239,58 +264,62 @@ def edit(img, geometry):
         return
 
 def crop_geometry(spec, bbox):
-    spec = re.match("([0-9]+x[0-9]+|[0-9]+%)([\+\-][0-9]+)([\+\-][0-9]+)", spec) or re.match("([0-9]+x[0-9]+|[0-9]+%)(c)", spec) or re.match("([0-9]+x[0-9]+|[0-9]+%)", spec) or re.match("([0-9]+),([0-9]+),([0-9]+),([0-9]+)", spec)
+    geometry =  re.match("([0-9]+),([0-9]+),([0-9]+),([0-9]+)", spec)
+    if geometry != None:
+        geometry = geometry.groups()
+        left = int(geometry[0])
+        upper = int(geometry[1])
+        right = int(geometry[2])
+        lower = int(geometry[3])
+
+    else:
+        geometry = re.match("([0-9]+x[0-9]+|[0-9]+%x[0-9]+%)([\+\-][0-9]+)([\+\-][0-9]+)", spec) or re.match("([0-9]+x[0-9]+|[0-9]+%x[0-9]+%)(c)", spec) or re.match("([0-9]+x[0-9]+|[0-9]+%x[0-9]+%)", spec)
     
-    if spec != None:
-        spec = spec.groups()
-        if (len(spec) == 1):
-            x, y = base_geometry(spec[0], bbox)
+        if (geometry == None):
+            raise ValueError("malformed spec \"{0}\"".format(spec))
+        else:
+            geometry = geometry.groups()
+
+        if (len(geometry) == 1):
+            x, y = base_geometry(geometry[0], bbox)
 
             return ("edit", x, y)
 
-        elif (len(spec) == 2):
-            x, y = base_geometry(spec[0], bbox)
+        elif (len(geometry) == 2):
+            x, y = base_geometry(geometry[0], bbox)
 
             left = (bbox[2] - x) / 2
-            upper = (bbox[3] - x) / 2
+            upper = (bbox[3] - y) / 2
             right = bbox[2] - left
             lower = bbox[3] - upper
 
-        elif (len(spec) == 3):
-            x, y = base_geometry(spec[0], bbox)
+        elif (len(geometry) == 3):
+            x, y = base_geometry(geometry[0], bbox)
 
-            if spec[1][0] == "-":
-                left = bbox[2] - x - int(spec[1][1:])
-            elif spec[1][0] == "+":
-                left = int(spec[1][1:])
+            if geometry[1][0] == "-":
+                left = bbox[2] - x - int(geometry[1][1:])
+            elif geometry[1][0] == "+":
+                left = int(geometry[1][1:])
             else:
                 raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
             right = left + x
 
-            if spec[2][0] == "-":
-                upper = bbox[3] - y - int(spec[2][1:])
+            if geometry[2][0] == "-":
+                upper = bbox[3] - y - int(geometry[2][1:])
             elif spec[2][0] == "+":
-                upper = int(spec[2][1:])
+                upper = int(geometry[2][1:])
             else:
                 raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
             lower = upper + y
 
-        elif (len(spec) == 4):
-            left = int(spec[0])
-            upper = int(spec[1])
-            right = int(spec[2])
-            lower = int(spec[3])
-
         else:
             raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
         
-    else:
-        raise ValueError("malformed spec \"{0}\"".format(spec))
-
     return (left, upper, right, lower)
 
 def resize_geometry(spec, bbox):
-    keep_aspect = True
+    inset = False
+    outset = False
 
     geometry = re.match("([0-9]+),([0-9]+)", spec)
     if geometry != None:
@@ -298,52 +327,57 @@ def resize_geometry(spec, bbox):
         y = int(geometry.group(2))
 
     else:
-        spec = re.match("(!)?([0-9]+x[0-9]+)", spec) or re.match("([0-9]+%)", spec)
+        geometry = re.match("([0-9]+x[0-9]+)(A|a)?", spec) or re.match("([0-9]+%x[0-9]+%)", spec)
         
-        if spec != None:
-            spec = spec.groups()
+        if geometry != None:
+            geometry = geometry.groups()
         else:
             raise ValueError("malformed spec \"{0}\"".format(spec))
 
-        if len(spec) == 1:
-            keep_aspect = False
-            spec = spec[0]
-        elif len(spec) == 2:
-            if spec[0] == "!":
-                keep_aspect = False
-            spec = spec[1]
-        else:
-            raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
+        if len(geometry) == 2:
+            if geometry[1] == "A":
+                outset = True
+            elif geometry[1] == "a":
+                inset = True
+            elif geometry[1] == None:
+                pass
+            else:
+                raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
 
-        x, y = base_geometry(spec, bbox)
+        x, y = base_geometry(geometry[0], bbox)
         
-        if keep_aspect:
+        if inset or outset:
             if (bbox[2]*y/bbox[3] > x):
-                y = bbox[3]*x / bbox[2]
+                if inset:
+                    y = bbox[3]*x / bbox[2]
+                elif outset:
+                    x = bbox[2]*y / bbox[3]
             elif (bbox[3]*x/bbox[2] > y):
-                x = bbox[2]*y / bbox[3]
+                if inset:
+                    x = bbox[2]*y / bbox[3]
+                elif outset:
+                    y = bbox[3]*x / bbox[2]
 
     return (x, y)
 
 def base_geometry(spec, bbox):
-    spec = re.match("([0-9]+)x([0-9]+)", spec) or re.match("([0-9]+)%", spec)
-    if spec == None:
+    geometry = re.match("([0-9]+)x([0-9]+)", spec) or re.match("([0-9]+)%x([0-9]+)(%)", spec)
+    if geometry == None:
         raise ValueError("malformed spec \"{0}\"".format(spec))
     else:
-        spec = spec.groups()
-        if len(spec) == 1:
-            ratio = int(spec[0])
-            x = bbox[2] * ratio / 100
-            y = bbox[3] * ratio / 100
-        elif len(spec) == 2:
-            x = int(spec[0])
-            y = int(spec[1])
+        geometry = geometry.groups()
+        if len(geometry) == 2:
+            x = int(geometry[0])
+            y = int(geometry[1])
+        elif len(geometry) == 3:
+            x = bbox[2] * int(geometry[0]) / 100
+            y = bbox[3] * int(geometry[1]) / 100
         else:
             raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
         
     return (x, y)
 
-__version__ = "a1"
+__version__ = "2-beta"
 
 progname = os.path.basename(sys.argv.pop(0))
 
@@ -431,12 +465,13 @@ while len(sys.argv) > 1:
             geometry = resize_geometry(sys.argv.pop(0), image.getbbox())
         except ValueError as error:
             perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
+            raise
             sys.exit(1)
         except TypeError as error:
             perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
             sys.exit(1)
         except:
-            perror("{0} (input): unknown error; please report the traceback:".format(imagefile))
+            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
             raise
             sys.exit(1)
         try:
