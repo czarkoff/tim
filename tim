@@ -24,6 +24,8 @@ def phelp(detailed=False):
     sys.stdout.write("\n")
     sys.stdout.write("options (filters):\n")
     sys.stdout.write("  -c GEOMETRY  crop an area with the specified GEOMETRY from image\n")
+    sys.stdout.write("  -f           flip image horizontally\n")
+    sys.stdout.write("  +f           flip image vertically\n")
     sys.stdout.write("  -r ANGLE     rotate an image ANGLE degrees clockwise\n")
     sys.stdout.write("  -s GEOMETRY  scale an image to GEOMETRY\n")
     if not detailed:
@@ -59,7 +61,7 @@ def phelp(detailed=False):
     sys.stdout.write("\n")
     sys.stdout.write("Correct {0} invokation examples:\n".format(progname))
     sys.stdout.write("\n")
-    sys.stdout.write("$ {0} old.jpg -s 500x700 -r 90 -c 100x100+20-10 -s 500x700A new.png\n".format(progname))
+    sys.stdout.write("$ {0} old.jpg -s 500x700 -r 90 -c 100x100+20-10 -s 500x700A +f new.png\n".format(progname))
     sys.stdout.write("\n")
     sys.stdout.write("  1. scale image to dimensions 500x700 regardless initial aspect ratio;\n")
     sys.stdout.write("  2. rotate the result 90 degrees clockwise;\n")
@@ -67,7 +69,8 @@ def phelp(detailed=False):
     sys.stdout.write("     bottom;\n")
     sys.stdout.write("  4. scale the result maintaining its aspect ratio to make its width no less;\n")
     sys.stdout.write("     then 500 and its height no less then 700\n")
-    sys.stdout.write("  5. export the result to file new.png in PNG format.\n")
+    sys.stdout.write("  5. flip the result vertically;\n")
+    sys.stdout.write("  6. export the result to file new.png in PNG format.\n")
     sys.stdout.write("\n")
     sys.stdout.write("$ {0} file.jpg -c 50%x50% file.jpg\n".format(progname))
     sys.stdout.write("\n")
@@ -432,6 +435,34 @@ while len(sys.argv) > 1:
 
         try:
             image = image.crop(geometry)
+        except MemoryError:
+            perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
+            sys.exit(1)
+        except TypeError as error:
+            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
+            sys.exit(1)
+        except:
+            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
+            raise
+            sys.exit(1)
+
+    elif operation == "-f":
+        try:
+            image = image.transpose(Image.FLIP_LEFT_RIGHT)
+        except MemoryError:
+            perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
+            sys.exit(1)
+        except TypeError as error:
+            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
+            sys.exit(1)
+        except:
+            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
+            raise
+            sys.exit(1)
+
+    elif operation == "+f":
+        try:
+            image = image.transpose(Image.FLIP_TOP_BOTTOM)
         except MemoryError:
             perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
             sys.exit(1)
