@@ -313,7 +313,7 @@ def crop_geometry(spec, bbox):
 
             if geometry[2][0] == "-":
                 upper = bbox[3] - y - int(geometry[2][1:])
-            elif spec[2][0] == "+":
+            elif geometry[2][0] == "+":
                 upper = int(geometry[2][1:])
             else:
                 raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
@@ -384,7 +384,7 @@ def base_geometry(spec, bbox):
         
     return (x, y)
 
-__version__ = "2-delta"
+__version__ = "2"
 
 progname = os.path.basename(sys.argv.pop(0))
 
@@ -421,13 +421,11 @@ try:
     elif image._getexif()[274] == 4:
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
     elif image._getexif()[274] == 5:
-        image = image.transpose(Image.FLIP_TOP_BOTTOM)
-        image = image.transpose(Image.ROTATE_90)
+        image = image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_90)
     elif image._getexif()[274] == 6:
         image = image.transpose(Image.ROTATE_270)
     elif image._getexif()[274] == 7:
-        image = image.transpose(Image.FLIP_TOP_BOTTOM)
-        image = image.transpose(Image.ROTATE_270)
+        image = image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_270)
     elif image._getexif()[274] == 8:
         image = image.transpose(Image.ROTATE_90)
 except:
@@ -503,19 +501,33 @@ while len(sys.argv) > 1:
     elif operation == "-r":
         angle = sys.argv.pop(0)
         try:
-            angle = int(angle) * -1
+            angle = int(angle) % 360
         except ValueError as error:
             perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
             sys.exit(1)
-        try:
-            image = image.rotate(angle, Image.BICUBIC, True)
-        except MemoryError:
-            perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
-            sys.exit(1)
-        except:
-            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
-            raise
-            sys.exit(1)
+
+        angle *= -1
+        if angle < 0:
+            angle += 360
+
+        if angle == 0:
+            pass
+        elif angle == 90:
+            image = image.transpose(Image.ROTATE_90)
+        elif angle == 180:
+            image = image.transpose(Image.ROTATE_180)
+        elif angle == 270:
+            image = image.transpose(Image.ROTATE_270)
+        else:
+            try:
+                image = image.rotate(angle, Image.BICUBIC, True)
+            except MemoryError:
+                perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
+                sys.exit(1)
+            except:
+                perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
+                raise
+                sys.exit(1)
 
     elif operation == "-s":
         try:
