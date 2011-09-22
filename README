@@ -46,9 +46,13 @@ will give some help. Calling "tim -h" will give more help and a usage example.
 
 TODO
 
- * Rethink the CropPhoto UI;
- * Possibly make CropPhoto a normal standalone widget;
- * Possibly rewrite the program to use another imaging library.
+ * implement batch mode (something like "tim 1.jpg 2.jpg 3.jpg [...] %s") to
+   avoid reinitialization of python with every invokation;
+ * rethink the CropPhoto UI;
+ * (possibly) extend EXIF support;
+ * (possibly) switch to compiled regular expressions;
+ * (possibly) make CropPhoto a normal standalone widget;
+ * (possibly) rewrite the program to use another imaging library (unlikely).
 
 KNOWN BUGS
 
