@@ -20,7 +20,7 @@ from PIL import Image, ImageTk
 
 def phelp(detailed=False):
     sys.stdout.write("{0} {1}\n".format(progname, __version__))
-    sys.stdout.write("usage: {0} infile [-c GEOMERTY] [-r ANGLE] [-s GEOMETRY] outfile\n".format(progname))
+    sys.stdout.write("usage: {0} infile [-c GEOMERTY] [-f] [+f] [-r ANGLE] [-s GEOMETRY] outfile\n".format(progname))
     sys.stdout.write("\n")
     sys.stdout.write("options (filters):\n")
     sys.stdout.write("  -c GEOMETRY  crop an area with the specified GEOMETRY from image\n")
