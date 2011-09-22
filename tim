@@ -380,7 +380,7 @@ def base_geometry(spec, bbox):
         
     return (x, y)
 
-__version__ = "2-beta"
+__version__ = "2-gamma"
 
 progname = os.path.basename(sys.argv.pop(0))
 
