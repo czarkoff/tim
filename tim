@@ -37,29 +37,18 @@ def phelp(detailed=False):
     sys.stdout.write("All EXIF data is stripped from infile. If EXIF orientation was specified, image\n")
     sys.stdout.write("it is applied.\n")
     sys.stdout.write("\n")
-    sys.stdout.write("GEOMETRY for \"-s\" (scale) operation can be secified as:\n")
-    sys.stdout.write("  * XxY (X and Y are either absolute values or percentages)\n")
-    sys.stdout.write("  * X,Y\n")
+    sys.stdout.write("GEOMETRY can be secified as XxY (X and Y are either absolute values or percents)\n")
     sys.stdout.write("\n")
     sys.stdout.write("By default, the \"-s\" (scale) operation doesn't maintain aspect ratio of image.\n")
-    sys.stdout.write("When GEOMETRY is specified as XxY with absolute values, this behaviour may be \n")
-    sys.stdout.write("overriden using postfixes \"A\" (new dimentions are at least as specified) or \"a\"\n")
-    sys.stdout.write("(new dimentions are at most as specified).\n")
+    sys.stdout.write("This behaviour may be overriden using postfixes \"A\" (new dimentions are at least\n")
+    sys.stdout.write("as specified) or \"a\" (new dimentions are at most as specified).\n")
     sys.stdout.write("\n")
-    sys.stdout.write("GEOMETRY for \"-c\" (crop) operation can be secified as:\n")
-    sys.stdout.write("\n")
-    sys.stdout.write("  * XxY (X and Y are either absolute values or percentages)\n")
-    sys.stdout.write("  * A,B,C,D\n")
-    sys.stdout.write("\n")
-    sys.stdout.write("The two-value spec can be ammended with \"c\" postfix to specify that the area\n")
-    sys.stdout.write("should be croped from center of image. Another way to specify area is to add a\n")
-    sys.stdout.write("pair of offsets in form of two subsequent signed numbers, first being the\n")
-    sys.stdout.write("horizontal offset (positive - from left, negative - from right), second -\n")
-    sys.stdout.write("the vertical one (positive - from top, negative - from bottom). Elsewise the UI\n")
-    sys.stdout.write("will be brough up help You choose the crp area position\n")
-    sys.stdout.write("\n")
-    sys.stdout.write("The four-value spec is taken as coordinates of topleft and bottomright pixels\n")
-    sys.stdout.write("(A,B)(C,D) of crop area. C must be greater then A, D must be greater then B.\n")
+    sys.stdout.write("The spec for \"-c\" (crop) operation can be ammended with \"c\" postfix to specify\n")
+    sys.stdout.write("that the area should be croped from center of image. Another way to specify area\n")
+    sys.stdout.write("is to add a pair of offsets in form of two subsequent signed numbers, first\n")
+    sys.stdout.write("being the horizontal offset (positive - from left, negative - from right),\n")
+    sys.stdout.write("second - the vertical one (positive - from top, negative - from bottom).\n")
+    sys.stdout.write("Elsewise the UI will be brough up help You choose the crp area position\n")
     sys.stdout.write("\n")
     sys.stdout.write("Every operation is performed on result of previous operation.\n")
     sys.stdout.write("\n")
@@ -87,6 +76,223 @@ def phelp(detailed=False):
     
 def perror(error):
     sys.stderr.write(progname + ": " + error + "\n")
+
+class Batch:
+    def __init__(self, commands):
+        self.quality = 85
+        self._re_crop = re.compile("([0-9]+)(%)?x([0-9]+)(%)?(([+-][0-9]+)([+-][0-9]+)|c)?$")
+        self._re_scale = re.compile("([0-9]+)(%)?x([0-9]+)(%)?(A|a)?$")
+
+        commands.reverse()
+
+        self.convayor = list()
+        while len(commands) > 0:
+            cmd = commands.pop()
+            try:
+                if cmd == "-c":
+                    self.convayor.append((self._crop, commands.pop()))
+                elif cmd == "-f":
+                    self.convayor.append((self._flip, Image.FLIP_LEFT_RIGHT))
+                elif cmd == "+f":
+                    self.convayor.append((self._flip, Image.FLIP_TOP_BOTTOM))
+                elif cmd == "-q":
+                    self.convayor.append((self._quality, int(commands.pop())))
+                elif cmd == "-r":
+                    self.convayor.append((self._rotate, -1*int(commands.pop())%360))
+                elif cmd == "-s":
+                    self.convayor.append((self._scale, commands.pop()))
+                else:
+                    raise KeyError("no such command: {0}".format(cmd))
+            except ValueError as error:
+                raise ValueError("(\"{0}\") {1}".format(cmd, error[-1]))
+            except KeyError as error:
+                raise KeyError("(arguments) {1}".format(cmd, error[-1]))
+            except IndexError:
+                raise IndexError("(arguments) no argument provided for command {0}".format(cmd))
+            
+    def _crop(self, spec):
+        try:
+            geometry = self._geom_crop(spec)
+        except ValueError as error:
+            raise ValueError("\"-c\" ({0}) {1}".format(self.opno, error[-1]))
+        if geometry[0] == "edit":
+            geometry = self.edit(geometry[1:])
+        if geometry == None:
+            perror("(\"-c\") canceled wia GUI")
+            sys.exit(0)
+
+        try:
+            self.image = self.image.crop(geometry)
+        except MemoryError as error:
+            raise MemoryError("\"-c\" ({0}) {1}".format(self.opno, error[-1]))
+
+    def _flip(self, direction):
+        try:
+            self.image = self.image.transpose(direction)
+        except MemoryError as error:
+            raise MemoryError("\"-f\" ({0}) {1}".format(self.opno, error[-1]))
+
+    def _quality(self, quality):
+        self.quality = quality
+
+    def _rotate(self, angle):
+        if angle == 0:
+            return
+        elif angle == 90:
+            self.image = self.image.transpose(Image.ROTATE_90)
+        elif angle == 180:
+            self.image = self.image.transpose(Image.ROTATE_180)
+        elif angle == 270:
+            self.image = self.image.transpose(Image.ROTATE_270)
+        else:
+            try:
+                self.image = self.image.rotate(angle, Image.BICUBIC, True)
+            except MemoryError as error:
+                raise MemoryError("\"-r\" ({0}) {1}".format(self.opno, error[-1]))
+
+    def _scale(self, spec):
+        try:
+            geometry = self._geom_scale(spec)
+        except ValueError as error:
+            raise ValueError("\"-s\" ({0}) {1}".format(self.opno, error[-1]))
+        try:
+            self.image = self.image.resize(geometry, Image.ANTIALIAS)
+        except MemoryError as error:
+            raise MemoryError("\"-s\" ({0}) {1}".format(self.opno, error[-1]))
+
+    def _geom_crop(self, spec):
+        geometry = self._re_crop.match(spec)
+        if not geometry:
+            raise ValueError("malformed spec: {0}".format(spec))
+        
+        bbox = self.image.getbbox()
+        geometry = geometry.groups()
+
+        if geometry[1]:
+            x = bbox[2]*int(geometry[0])/100
+        else:
+            x = int(geometry[0])
+        
+        if geometry[3]:
+            y = bbox[3]*int(geometry[0])/100
+        else:
+            y = int(geometry[2])
+
+        if not geometry[4]:
+            left, upper, right, lower = self.edit((x, y))
+        
+        if geometry[4] == "c":
+            left = (bbox[2] - x) / 2
+            upper = (bbox[3] - y) / 2
+            right = x + left
+            lower = y + upper
+
+        else:
+            left = int(geometry[5])
+            if left < 0:
+                left += bbox[2] - x
+            right = x + left
+            
+            upper = int(geometry[6])
+            if upper < 0:
+                upper += bbox[2] - y
+            lower = x + upper
+
+        return (left, upper, right, lower)
+
+    def _geom_scale(self, spec):
+        geometry = self._re_scale.match(spec)
+        if not geometry:
+            raise ValueError("malformed spec: {0}".format(spec))
+        
+        bbox = self.image.getbbox()
+        geometry = geometry.groups()
+
+        if geometry[1]:
+            x = bbox[2]*int(geometry[0])/100
+        else:
+            x = int(geometry[0])
+        
+        if geometry[3]:
+            y = bbox[3]*int(geometry[0])/100
+        else:
+            y = int(geometry[2])
+
+        if geometry[4]:
+            if (float(bbox[2]*y)/bbox[3] > x):
+                if geometry[4] == "a":
+                    y = bbox[3]*x / bbox[2]
+                elif geometry[4] == "A":
+                    x = bbox[2]*y / bbox[3]
+            elif (float(bbox[3]*x)/bbox[2] > y):
+                if geometry[4] == "a":
+                    x = bbox[2]*y / bbox[3]
+                elif geometry[4] == "A":
+                    y = bbox[3]*x / bbox[2]
+
+        return (x, y)
+    
+    def edit(self, geometry):
+        root = Tkinter.Tk()
+        
+        status = Tkinter.IntVar()
+        left = Tkinter.IntVar()
+        upper = Tkinter.IntVar()
+        right = Tkinter.IntVar()
+        lower = Tkinter.IntVar()
+        
+        bbox = self.image.getbbox()
+        
+        status.set(0)
+        left.set(0)
+        upper.set(0)
+        right.set(bbox[2] - geometry[0])
+        lower.set(bbox[3] - geometry[1])
+        widget = CropPhoto(root, status, self.image, left, upper, right, lower, buttons=True)
+        widget.pack()
+
+        root.mainloop()
+
+        if status.get() == 1:
+            return (left.get(), upper.get(), bbox[2]-right.get(), bbox[3]-lower.get())
+        else:
+            return
+
+    def open(self, filename):
+        self.image = Image.open(filename)
+        try:
+            orientation = image._getexif()[274]
+            if orientation == 1:
+                pass
+            elif orientation == 2:
+                image = image.transpose(Image.FLIP_LEFT_RIGHT)
+            elif orientation == 3:
+                image = image.transpose(Image.ROTATE_180)
+            elif orientation == 4:
+                image = image.transpose(Image.FLIP_TOP_BOTTOM)
+            elif orientation == 5:
+                image = image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_90)
+            elif orientation == 6:
+                image = image.transpose(Image.ROTATE_270)
+            elif orientation == 7:
+                image = image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_270)
+            elif orientation == 8:
+                image = image.transpose(Image.ROTATE_90)
+        except:
+            pass
+
+    def run(self):
+        self.opno = 0
+        for func, arg in self.convayor:
+            self.opno += 1
+            func(arg)
+            try:
+                self.image.getbbox()
+            except AttributeError:
+                raise StandardError("image is lost due to PIL bug")
+
+    def save(self, filename):
+        self.image.save(filename, quality=self.quality)
 
 class CropPhoto(Tkinter.Frame):
     def __init__(self, master, status, img, left, upper, right, lower, buttons=False, **kw):
@@ -245,147 +451,7 @@ class CropPhoto(Tkinter.Frame):
         self.status.set(1)
         self.quit()
 
-def edit(img, geometry):
-    root = Tkinter.Tk()
-    
-    status = Tkinter.IntVar()
-    left = Tkinter.IntVar()
-    upper = Tkinter.IntVar()
-    right = Tkinter.IntVar()
-    lower = Tkinter.IntVar()
-    
-    bbox = img.getbbox()
-    
-    status.set(0)
-    left.set(0)
-    upper.set(0)
-    right.set(bbox[2] - geometry[0])
-    lower.set(bbox[3] - geometry[1])
-    resizer = CropPhoto(root, status, img, left, upper, right, lower, buttons=True)
-    resizer.pack()
-
-    root.mainloop()
-
-    if status.get() == 1:
-        return (left.get(), upper.get(), bbox[2]-right.get(), bbox[3]-lower.get())
-    else:
-        return
-
-def crop_geometry(spec, bbox):
-    geometry =  re.match("([0-9]+),([0-9]+),([0-9]+),([0-9]+)", spec)
-    if geometry != None:
-        geometry = geometry.groups()
-        left = int(geometry[0])
-        upper = int(geometry[1])
-        right = int(geometry[2])
-        lower = int(geometry[3])
-
-    else:
-        geometry = re.match("([0-9]+x[0-9]+|[0-9]+%x[0-9]+%)([\+\-][0-9]+)([\+\-][0-9]+)", spec) or re.match("([0-9]+x[0-9]+|[0-9]+%x[0-9]+%)(c)", spec) or re.match("([0-9]+x[0-9]+|[0-9]+%x[0-9]+%)", spec)
-    
-        if (geometry == None):
-            raise ValueError("malformed spec \"{0}\"".format(spec))
-        else:
-            geometry = geometry.groups()
-
-        if (len(geometry) == 1):
-            x, y = base_geometry(geometry[0], bbox)
-
-            return ("edit", x, y)
-
-        elif (len(geometry) == 2):
-            x, y = base_geometry(geometry[0], bbox)
-
-            left = (bbox[2] - x) / 2
-            upper = (bbox[3] - y) / 2
-            right = bbox[2] - left
-            lower = bbox[3] - upper
-
-        elif (len(geometry) == 3):
-            x, y = base_geometry(geometry[0], bbox)
-
-            if geometry[1][0] == "-":
-                left = bbox[2] - x - int(geometry[1][1:])
-            elif geometry[1][0] == "+":
-                left = int(geometry[1][1:])
-            else:
-                raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
-            right = left + x
-
-            if geometry[2][0] == "-":
-                upper = bbox[3] - y - int(geometry[2][1:])
-            elif geometry[2][0] == "+":
-                upper = int(geometry[2][1:])
-            else:
-                raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
-            lower = upper + y
-
-        else:
-            raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
-        
-    return (left, upper, right, lower)
-
-def resize_geometry(spec, bbox):
-    inset = False
-    outset = False
-
-    geometry = re.match("([0-9]+),([0-9]+)", spec)
-    if geometry != None:
-        x = int(geometry.group(1))
-        y = int(geometry.group(2))
-
-    else:
-        geometry = re.match("([0-9]+x[0-9]+)(A|a)?", spec) or re.match("([0-9]+%x[0-9]+%)", spec)
-        
-        if geometry != None:
-            geometry = geometry.groups()
-        else:
-            raise ValueError("malformed spec \"{0}\"".format(spec))
-
-        if len(geometry) == 2:
-            if geometry[1] == "A":
-                outset = True
-            elif geometry[1] == "a":
-                inset = True
-            elif geometry[1] == None:
-                pass
-            else:
-                raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
-
-        x, y = base_geometry(geometry[0], bbox)
-        
-        if inset or outset:
-            if (bbox[2]*y/bbox[3] > x):
-                if inset:
-                    y = bbox[3]*x / bbox[2]
-                elif outset:
-                    x = bbox[2]*y / bbox[3]
-            elif (bbox[3]*x/bbox[2] > y):
-                if inset:
-                    x = bbox[2]*y / bbox[3]
-                elif outset:
-                    y = bbox[3]*x / bbox[2]
-
-    return (x, y)
-
-def base_geometry(spec, bbox):
-    geometry = re.match("([0-9]+)x([0-9]+)", spec) or re.match("([0-9]+)%x([0-9]+)(%)", spec)
-    if geometry == None:
-        raise ValueError("malformed spec \"{0}\"".format(spec))
-    else:
-        geometry = geometry.groups()
-        if len(geometry) == 2:
-            x = int(geometry[0])
-            y = int(geometry[1])
-        elif len(geometry) == 3:
-            x = bbox[2] * int(geometry[0]) / 100
-            y = bbox[3] * int(geometry[1]) / 100
-        else:
-            raise ValueError("malformed spec \"{0}\" passed filter; please report it".format(spec))
-        
-    return (x, y)
-
-__version__ = "3-alpha"
+__version__ = "3-beta"
 
 progname = os.path.basename(sys.argv.pop(0))
 
@@ -401,190 +467,37 @@ if sys.argv.count("-"):
     perror("reading from and/or writing to pipes not supported")
     sys.exit(1)
 
-imagefile = sys.argv.pop(0)
-try:
-    image = Image.open(imagefile)
-except IOError as error:
-    perror("{0} (input): {1}".format(imagefile, error[-1]))
-    sys.exit(1)
-except:
-    perror("{0} (input): unknown error; please report the traceback:".format(imagefile))
-    raise
-    sys.exit(1)
+infiles = list()
+while os.path.exists(sys.argv[0]):
+    infiles.append(sys.argv.pop(0))
+
+template = sys.argv.pop()
 
 try:
-    orientation = image._getexif()[274]
-    if orientation == 1:
-        pass
-    elif orientation == 2:
-        image = image.transpose(Image.FLIP_LEFT_RIGHT)
-    elif orientation == 3:
-        image = image.transpose(Image.ROTATE_180)
-    elif orientation == 4:
-        image = image.transpose(Image.FLIP_TOP_BOTTOM)
-    elif orientation == 5:
-        image = image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_90)
-    elif orientation == 6:
-        image = image.transpose(Image.ROTATE_270)
-    elif orientation == 7:
-        image = image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_270)
-    elif orientation == 8:
-        image = image.transpose(Image.ROTATE_90)
+    batch = Batch(sys.argv)
 except:
-    pass
-
-operations = 0
-quality = 85
-while len(sys.argv) > 1:
-    operation = sys.argv.pop(0)
-    operations += 1
-
-    if operation == "-c":
-        try:
-            geometry = crop_geometry(sys.argv.pop(0), image.getbbox())
-        except ValueError as error:
-            perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
-            sys.exit(1)
-        except TypeError as error:
-            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
-            sys.exit(1)
-        except:
-            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
-            raise
-            sys.exit(1)
-            
-        if geometry[0] == "edit":
-            geometry = edit(image, geometry[1:])
-        
-        if geometry == None:
-            perror("\"{0}\" operation canceled wia GUI".format(operation));
-            sys.exit(0)
-
-        try:
-            image = image.crop(geometry)
-        except MemoryError:
-            perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
-            sys.exit(1)
-        except TypeError as error:
-            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
-            sys.exit(1)
-        except:
-            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
-            raise
-            sys.exit(1)
-
-    elif operation == "-f":
-        try:
-            image = image.transpose(Image.FLIP_LEFT_RIGHT)
-        except MemoryError:
-            perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
-            sys.exit(1)
-        except TypeError as error:
-            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
-            sys.exit(1)
-        except:
-            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
-            raise
-            sys.exit(1)
-
-    elif operation == "+f":
-        try:
-            image = image.transpose(Image.FLIP_TOP_BOTTOM)
-        except MemoryError:
-            perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
-            sys.exit(1)
-        except TypeError as error:
-            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
-            sys.exit(1)
-        except:
-            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
-            raise
-            sys.exit(1)
-
-    elif operation == "-r":
-        angle = sys.argv.pop(0)
-        try:
-            angle = int(angle) % 360
-        except ValueError as error:
-            perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
-            sys.exit(1)
-
-        angle *= -1
-        if angle < 0:
-            angle += 360
-
-        if angle == 0:
-            pass
-        elif angle == 90:
-            image = image.transpose(Image.ROTATE_90)
-        elif angle == 180:
-            image = image.transpose(Image.ROTATE_180)
-        elif angle == 270:
-            image = image.transpose(Image.ROTATE_270)
-        else:
-            try:
-                image = image.rotate(angle, Image.BICUBIC, True)
-            except MemoryError:
-                perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
-                sys.exit(1)
-            except:
-                perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
-                raise
-                sys.exit(1)
-
-    elif operation == "-q":
-        try:
-            quality = int(sys.argv.pop(0))
-        except ValueError as error:
-            perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
-            sys.exit(1)
-        except TypeError as error:
-            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
-            sys.exit(1)
-        except:
-            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
-            raise
-            sys.exit(1)
-
-    elif operation == "-s":
-        try:
-            geometry = resize_geometry(sys.argv.pop(0), image.getbbox())
-        except ValueError as error:
-            perror("operation \"{0}\" ({1}): {2}".format(operation, operations, error[-1]))
-            sys.exit(1)
-        except TypeError as error:
-            perror("operation \"{0}\" ({1}): image was damaged due to some PIL's silent bug".format(operation, operations))
-            sys.exit(1)
-        except:
-            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
-            raise
-            sys.exit(1)
-        try:
-            image = image.resize(geometry, Image.ANTIALIAS)
-        except MemoryError:
-            perror("operation \"{0}\" ({1}): out of memory".format(operation, operations))
-            sys.exit(1)
-        except:
-            perror("operation \"{0}\" ({1}): unknown error; please report the traceback:".format(operation, operations))
-            raise
-            sys.exit(1)
-
-    else:
-        perror("wrong operation \"{0}\"".format(operation))
-        sys.exit(0)
-
-try:
-    imagefile = sys.argv.pop(0)
-    image = image.save(imagefile, quality=quality)
-except IOError as error:
-    perror("{0} (output): {1}".format(imagefile, error[-1]))
-    sys.exit(1)
-except (KeyError, IndexError):
-    perror("no output file specified")
-    sys.exit(1)
-except:
-    perror("{0} (output): unknown error; please report the traceback:".format(imagefile))
-    raise
+    raise   #placeholder for now
     sys.exit(1)
 
-# vim:set ts=4 et
+for infile in infiles:
+    outfile = template.replace("%d", str(infiles.index(infile))).replace("%p", os.path.dirname(infile)).replace("%f", os.path.basename(infile))
+
+    try:
+        batch.open(infile)
+    except IOError as error:
+        perror("(input) failed to open \"{0}\"".format(infile))
+        sys.exit(2)
+
+    try:
+        batch.run()
+    except StandardError as error:
+        perror("{0}: {1}".format(infile, error[-1]))
+        sys.exit(3)
+    except:
+        raise   #placeholder for now
+
+    try:
+        batch.save(outfile)
+    except IOError as error:
+        perror("(output) failed to write to \"{0}\"".format(outfile))
+        sys.exit(2)
