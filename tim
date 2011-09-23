@@ -181,7 +181,7 @@ class Batch:
         if not geometry[4]:
             left, upper, right, lower = self.edit((x, y))
         
-        if geometry[4] == "c":
+        elif geometry[4] == "c":
             left = (bbox[2] - x) / 2
             upper = (bbox[3] - y) / 2
             right = x + left
@@ -189,12 +189,12 @@ class Batch:
 
         else:
             left = int(geometry[5])
-            if left < 0:
+            if geometry[5][0] == "-":
                 left += bbox[2] - x
             right = x + left
             
             upper = int(geometry[6])
-            if upper < 0:
+            if geometry[6][0] == "-":
                 upper += bbox[2] - y
             lower = x + upper
 
@@ -256,7 +256,7 @@ class Batch:
         if status.get() == 1:
             return (left.get(), upper.get(), bbox[2]-right.get(), bbox[3]-lower.get())
         else:
-            return
+            raise KeyboardInterrupt("Cropping canceled in UI")
 
     def open(self, filename):
         self.image = Image.open(filename)
@@ -499,6 +499,9 @@ for infile in infiles:
 
     try:
         batch.run()
+    except KeyboardInterrupt as error:
+        perror("{0}: {1}".format(infile, error[-1]))
+        sys.exit(0)
 #    except StandardError as error:
 #        perror("{0}: {1}".format(infile, error[-1]))
 #        sys.exit(3)
