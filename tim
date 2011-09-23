@@ -453,33 +453,37 @@ class CropPhoto(Tkinter.Frame):
 
 __version__ = "3-beta"
 
-progname = os.path.basename(sys.argv.pop(0))
+args = list()
+for arg in sys.argv:
+    args.append(arg)
 
-if len(sys.argv) == 0:
+progname = os.path.basename(args.pop(0))
+
+if len(args) == 0:
     phelp()
     sys.exit(0)
 
-elif sys.argv[0] == "-h":
+elif args[0] == "-h":
     phelp(detailed=True)
     sys.exit(0)
 
 verbose = False
-while sys.argv.count("-v"):
+while args.count("-v"):
     verbose = not verbose
-    sys.argv.remove("-v")
+    args.remove("-v")
 
-if sys.argv.count("-"):
+if args.count("-"):
     perror("reading from and/or writing to pipes not supported")
     sys.exit(1)
 
 infiles = list()
-while os.path.exists(sys.argv[0]):
-    infiles.append(sys.argv.pop(0))
+while os.path.exists(args[0]):
+    infiles.append(args.pop(0))
 
-template = sys.argv.pop()
+template = args.pop()
 
 try:
-    batch = Batch(sys.argv)
+    batch = Batch(args)
 except:
     raise   #placeholder for now
     sys.exit(1)
@@ -495,9 +499,9 @@ for infile in infiles:
 
     try:
         batch.run()
-    except StandardError as error:
-        perror("{0}: {1}".format(infile, error[-1]))
-        sys.exit(3)
+#    except StandardError as error:
+#        perror("{0}: {1}".format(infile, error[-1]))
+#        sys.exit(3)
     except:
         raise   #placeholder for now
 
