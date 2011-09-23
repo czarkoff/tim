@@ -261,23 +261,23 @@ class Batch:
     def open(self, filename):
         self.image = Image.open(filename)
         try:
-            orientation = image._getexif()[274]
+            orientation = self.image._getexif()[274]
             if orientation == 1:
                 pass
             elif orientation == 2:
-                image = image.transpose(Image.FLIP_LEFT_RIGHT)
+                self.image = self.image.transpose(Image.FLIP_LEFT_RIGHT)
             elif orientation == 3:
-                image = image.transpose(Image.ROTATE_180)
+                self.image = self.image.transpose(Image.ROTATE_180)
             elif orientation == 4:
-                image = image.transpose(Image.FLIP_TOP_BOTTOM)
+                self.image = self.image.transpose(Image.FLIP_TOP_BOTTOM)
             elif orientation == 5:
-                image = image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_90)
+                self.image = self.image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_90)
             elif orientation == 6:
-                image = image.transpose(Image.ROTATE_270)
+                self.image = self.image.transpose(Image.ROTATE_270)
             elif orientation == 7:
-                image = image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_270)
+                self.image = self.image.transpose(Image.FLIP_TOP_BOTTOM).transpose(Image.ROTATE_270)
             elif orientation == 8:
-                image = image.transpose(Image.ROTATE_90)
+                self.image = self.image.transpose(Image.ROTATE_90)
         except:
             pass
 
