@@ -463,6 +463,11 @@ elif sys.argv[0] == "-h":
     phelp(detailed=True)
     sys.exit(0)
 
+verbose = False
+while sys.argv.count("-v"):
+    verbose = not verbose
+    sys.argv.remove("-v")
+
 if sys.argv.count("-"):
     perror("reading from and/or writing to pipes not supported")
     sys.exit(1)
@@ -501,5 +506,8 @@ for infile in infiles:
     except IOError as error:
         perror("(output) failed to write to \"{0}\"".format(outfile))
         sys.exit(2)
+
+    if verbose:
+        sys.stdout.write("{0} => {1}\n".format(infile, outfile))
 
 # vim:set ts=4 et
