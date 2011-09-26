@@ -252,7 +252,7 @@ class Batch:
         upper.set(0)
         right.set(bbox[2] - geometry[0])
         lower.set(bbox[3] - geometry[1])
-        widget = CropPhoto(root, self.image, left, upper, right, lower)
+        widget = CropPhoto(root, self.image, (root.winfo_screenwidth()*3/4, root.winfo_screenheight()*2/3), left, upper, right, lower)
         widget.grid(row=0, column=0, columnspan=2, sticky=Tkinter.W+Tkinter.E+Tkinter.N+Tkinter.S)
 
         self.b_cancel = Tkinter.Button(root, text="Cancel", command=abort)
@@ -305,7 +305,7 @@ class Batch:
         self.image.save(filename, quality=self.quality)
 
 class CropPhoto(Tkinter.Frame):
-    def __init__(self, master, image, left, upper, right, lower, **kw):
+    def __init__(self, master, image, winfo, left, upper, right, lower, **kw):
         self.state = True
         self.image = image
 
@@ -323,25 +323,35 @@ class CropPhoto(Tkinter.Frame):
 
         Tkinter.Frame.__init__(self, master, **kw)
         self.etop = Tkinter.Entry(self, textvariable=self.upper, width=5)
-        self.etop.grid(row=0, column=1)
+        self.etop.grid(row=0, column=1, columnspan=2)
         
         self.eleft = Tkinter.Entry(self, textvariable=self.left, width=5)
-        self.eleft.grid(row=1, column=0)
+        self.eleft.grid(row=1, column=0, rowspan=2)
 
-        self.canvas = Tkinter.Canvas(self, width=image.getbbox()[2], height=image.getbbox()[3])
+        yscroll=Tkinter.Scrollbar(self)
+        yscroll.grid(row=1, column=2, sticky=Tkinter.N+Tkinter.S)
+
+        xscroll=Tkinter.Scrollbar(self, orient=Tkinter.HORIZONTAL)
+        xscroll.grid(row=2, column=1, sticky=Tkinter.W+Tkinter.E)
+
+        self.canvas = Tkinter.Canvas(self, width=min(self.bbox[2], winfo[0]), height=min(self.bbox[3], winfo[1]), yscrollcommand=yscroll.set, xscrollcommand=xscroll.set)
         self.photo = ImageTk.PhotoImage(self.image)
         self.canvas.create_image(0, 0, anchor=Tkinter.NW, image = self.photo);
+        self.canvas.config(scrollregion=self.canvas.bbox(Tkinter.ALL))
         self.canvas.grid(row=1, column=1)
+
+        xscroll.config(command=self.canvas.xview)
+        yscroll.config(command=self.canvas.yview)
 
         self.rect = self.canvas.create_rectangle(self.left.get(), self.upper.get(), self.bbox[2]-self.right.get(), self.bbox[3]-self.lower.get())
         self.canvas.bind("<B1-Motion>", self.bp)
         self.canvas.bind("<ButtonRelease-1>", self.br)
 
         self.eright = Tkinter.Entry(self, textvariable=self.right, width=5)
-        self.eright.grid(row=1, column=2)
+        self.eright.grid(row=1, column=3, rowspan=2)
 
         self.ebottom = Tkinter.Entry(self, textvariable=self.lower, width=5)
-        self.ebottom.grid(row=2, column=1)
+        self.ebottom.grid(row=3, column=1, columnspan=2)
 
         self.eleft.bind("<Key>", self.left_key)
         self.etop.bind("<Key>", self.upper_key)
@@ -443,7 +453,7 @@ class CropPhoto(Tkinter.Frame):
         if event.keysym == "Up" or event.keysym == "Down" or event.keysym == "Tab":
             self.lower_value(event)
 
-__version__ = "3-gamma"
+__version__ = "3-delta"
 
 args = list()
 for arg in sys.argv:
