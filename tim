@@ -253,13 +253,13 @@ class Batch:
         right.set(bbox[2] - geometry[0])
         lower.set(bbox[3] - geometry[1])
         widget = CropPhoto(root, self.image, left, upper, right, lower)
-        widget.grid(row=0, column=0, columnspan=2, sticky=Tkinter.N+Tkinter.W+Tkinter.E+Tkinter.S)
+        widget.grid(row=0, column=0, columnspan=2, sticky=Tkinter.W+Tkinter.E+Tkinter.N+Tkinter.S)
 
         self.b_cancel = Tkinter.Button(root, text="Cancel", command=abort)
         self.b_crop = Tkinter.Button(root, text="Crop", command=root.destroy)
         
-        self.b_cancel.grid(row=1, column=0, sticky=Tkinter.W+Tkinter.S)
-        self.b_crop.grid(row=1, column=2, sticky=Tkinter.E+Tkinter.S)
+        self.b_cancel.grid(row=1, column=0, sticky=Tkinter.W+Tkinter.E+Tkinter.N+Tkinter.S)
+        self.b_crop.grid(row=1, column=1, sticky=Tkinter.W+Tkinter.E+Tkinter.N+Tkinter.S)
 
         root.mainloop()
 
