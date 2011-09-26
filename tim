@@ -80,6 +80,7 @@ def perror(error):
 class Batch:
     def __init__(self, commands):
         self.quality = 85
+        self.status = True
         self._re_crop = re.compile("([0-9]+)(%)?x([0-9]+)(%)?(([+-][0-9]+)([+-][0-9]+)|c)?$")
         self._re_scale = re.compile("([0-9]+)(%)?x([0-9]+)(%)?(A|a)?$")
 
@@ -233,9 +234,13 @@ class Batch:
         return (x, y)
     
     def edit(self, geometry):
-        root = Tkinter.Tk()
+        def abort():
+            self.status = False
+            root.destroy()
         
-        status = Tkinter.IntVar()
+        root = Tkinter.Tk()
+        root.protocol("WM_DELETE_WINDOW", abort)
+        
         left = Tkinter.IntVar()
         upper = Tkinter.IntVar()
         right = Tkinter.IntVar()
@@ -243,20 +248,25 @@ class Batch:
         
         bbox = self.image.getbbox()
         
-        status.set(0)
         left.set(0)
         upper.set(0)
         right.set(bbox[2] - geometry[0])
         lower.set(bbox[3] - geometry[1])
-        widget = CropPhoto(root, status, self.image, left, upper, right, lower, buttons=True)
-        widget.pack()
+        widget = CropPhoto(root, self.image, left, upper, right, lower)
+        widget.grid(row=0, column=0, columnspan=2, sticky=Tkinter.N+Tkinter.W+Tkinter.E+Tkinter.S)
+
+        self.b_cancel = Tkinter.Button(root, text="Cancel", command=abort)
+        self.b_crop = Tkinter.Button(root, text="Crop", command=root.destroy)
+        
+        self.b_cancel.grid(row=1, column=0, sticky=Tkinter.W+Tkinter.S)
+        self.b_crop.grid(row=1, column=2, sticky=Tkinter.E+Tkinter.S)
 
         root.mainloop()
 
-        if status.get() == 1:
+        if self.status:
             return (left.get(), upper.get(), bbox[2]-right.get(), bbox[3]-lower.get())
         else:
-            raise KeyboardInterrupt("Cropping canceled in UI")
+            raise KeyboardInterrupt("\"-c\" ({0}) canceled in UI.".format(self.opno))
 
     def open(self, filename):
         self.image = Image.open(filename)
@@ -295,13 +305,9 @@ class Batch:
         self.image.save(filename, quality=self.quality)
 
 class CropPhoto(Tkinter.Frame):
-    def __init__(self, master, status, img, left, upper, right, lower, buttons=False, **kw):
+    def __init__(self, master, img, left, upper, right, lower, **kw):
         self.state = True
         self.img = img
-        self.status = status
-
-        if not buttons:
-            self.status.set(1)
 
         self.left = left
         self.upper = upper
@@ -346,13 +352,6 @@ class CropPhoto(Tkinter.Frame):
         self.etop.bind("<Return>", self.upper_value)
         self.eright.bind("<Return>", self.right_value)
         self.ebottom.bind("<Return>", self.lower_value)
-
-        self.b_cancel = Tkinter.Button(self, text="Abort", command=self.cancel)
-        self.b_crop = Tkinter.Button(self, text="Crop", command=self.crop)
-        
-        if buttons:
-            self.b_cancel.grid(row=2, column=0)
-            self.b_crop.grid(row=2, column=2)
 
     def chkpair(self, a, b):
         if a.get() < 0:
@@ -444,13 +443,6 @@ class CropPhoto(Tkinter.Frame):
         if event.keysym == "Up" or event.keysym == "Down" or event.keysym == "Tab":
             self.lower_value(event)
 
-    def cancel(self):
-        self.quit()
-
-    def crop(self):
-        self.status.set(1)
-        self.quit()
-
 __version__ = "3-beta"
 
 args = list()
@@ -501,7 +493,7 @@ for infile in infiles:
         batch.run()
     except KeyboardInterrupt as error:
         perror("{0}: {1}".format(infile, error[-1]))
-        sys.exit(0)
+        continue
 #    except StandardError as error:
 #        perror("{0}: {1}".format(infile, error[-1]))
 #        sys.exit(3)
