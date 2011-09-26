@@ -46,13 +46,17 @@ will give some help. Calling "tim -h" will give more help and a usage example.
 
 TODO
 
- * rethink the CropPhoto UI;
- * (possibly) extend EXIF support;
- * (possibly) switch to compiled regular expressions;
- * (possibly) make CropPhoto a normal standalone widget;
+ * make image scroll automaticly in CropPhoto UI (blocker for version 3)
+ * rethink the CropPhoto UI (blocker for version 4);
+ * make py3k-safe (depends on PIL);
+ * (possibly) add more patterns to match (depends on my imagination ;-));
+ * (possibly) extend EXIF support (version 5? or PIL update?);
+ * (possibly) make CropPhoto a normal standalone widget (version 4?);
  * (possibly) rewrite the program to use another imaging library (unlikely).
 
 KNOWN BUGS
 
- * PIL seems to be silently spoiling some images. The corresponding error
-   message is shown if problem found.
+ * PIL seems to be silently spoiling some images. As I can't reliably
+   reproduce it in current version, tim just checks for image sanity after
+   each iteration and exist with the corresponding error message if image gets
+   damaged.
