@@ -443,7 +443,7 @@ class CropPhoto(Tkinter.Frame):
         if event.keysym == "Up" or event.keysym == "Down" or event.keysym == "Tab":
             self.lower_value(event)
 
-__version__ = "3-beta"
+__version__ = "3-gamma"
 
 args = list()
 for arg in sys.argv:
@@ -494,9 +494,9 @@ for infile in infiles:
     except KeyboardInterrupt as error:
         perror("{0}: {1}".format(infile, error[-1]))
         continue
-#    except StandardError as error:
-#        perror("{0}: {1}".format(infile, error[-1]))
-#        sys.exit(3)
+    except StandardError as error:
+        perror("{0}: {1}".format(infile, error[-1]))
+        sys.exit(3)
     except:
         raise   #placeholder for now
 
