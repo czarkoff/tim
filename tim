@@ -305,9 +305,9 @@ class Batch:
         self.image.save(filename, quality=self.quality)
 
 class CropPhoto(Tkinter.Frame):
-    def __init__(self, master, img, left, upper, right, lower, **kw):
+    def __init__(self, master, image, left, upper, right, lower, **kw):
         self.state = True
-        self.img = img
+        self.image = image
 
         self.left = left
         self.upper = upper
@@ -319,7 +319,7 @@ class CropPhoto(Tkinter.Frame):
         self.pright = self.right.get()
         self.plower = self.lower.get()
         
-        self.bbox = img.getbbox()
+        self.bbox = image.getbbox()
 
         Tkinter.Frame.__init__(self, master, **kw)
         self.etop = Tkinter.Entry(self, textvariable=self.upper, width=5)
@@ -328,8 +328,8 @@ class CropPhoto(Tkinter.Frame):
         self.eleft = Tkinter.Entry(self, textvariable=self.left, width=5)
         self.eleft.grid(row=1, column=0)
 
-        self.canvas = Tkinter.Canvas(self, width=img.getbbox()[2], height=img.getbbox()[3])
-        self.photo = ImageTk.PhotoImage(self.img)
+        self.canvas = Tkinter.Canvas(self, width=image.getbbox()[2], height=image.getbbox()[3])
+        self.photo = ImageTk.PhotoImage(self.image)
         self.canvas.create_image(0, 0, anchor=Tkinter.NW, image = self.photo);
         self.canvas.grid(row=1, column=1)
 
