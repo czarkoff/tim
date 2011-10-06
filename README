@@ -46,7 +46,8 @@ will give some help. Calling "tim -h" will give more help and a usage example.
 
 TODO
 
- * make image scroll automaticly in CropPhoto UI (blocker for version 3)
+ * rethink output patterns (eg. "%4d.jpg") (blocker for version 3);
+ * resolve image scroll problems in CropPhoto UI (blocker for version 4);
  * rethink the CropPhoto UI (blocker for version 4);
  * make py3k-safe (depends on PIL);
  * (possibly) add more patterns to match (depends on my imagination ;-));
