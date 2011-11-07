@@ -27,6 +27,8 @@ On Windows You should rename the file *tim* to *whatever-you-like-to-call-it.py*
 
 It works and seems to be in a fairly good shape. A test on my system has given the following results: tim is only about 3% slower then ImageMagick's convert on the same operations, which is fairly nice as tim ads an extra step of rotating images according to EXIF data, providing the correctly orientated PNGs, which convert doesn't.
 
+For now I'm waiting for Python3-compatible PIL release. Until that happens, nothing is going to change in this repo, I believe.
+
 **Documentation**
 
 Currently the project contains a single useful file that can be chmodded and placed wherever one wants within the *PATH*, so I don't think adding a manpage is a great idea.
